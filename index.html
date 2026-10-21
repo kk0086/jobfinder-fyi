@@ -13,15 +13,15 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-ap
 .wrap{max-width:1200px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 h1{font-size:22px;margin:0}
 .sub{color:var(--muted);font-size:13px;margin:4px 0 12px}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
 .tile,.card{background:var(--card);border:1px solid var(--line);border-radius:10px}
-.tile{padding:12px 14px}.tile b{display:block;font-size:26px;letter-spacing:-.5px}.tile span{color:var(--muted);font-size:12px}
-.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:16px}
-.card{padding:12px 14px}.card h2{font-size:13px;margin:0 0 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
-.bar{display:grid;grid-template-columns:96px 1fr 38px;align-items:center;gap:8px;font-size:13px;margin:3px 0;cursor:pointer;border-radius:4px}
+.tile{padding:6px 12px}.tile b{display:inline;font-size:18px;letter-spacing:-.3px;margin-right:6px}.tile span{color:var(--muted);font-size:12px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-bottom:10px}
+.card{padding:8px 12px}.card h2{font-size:11px;margin:0 0 4px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.bar{display:grid;grid-template-columns:96px 1fr 38px;align-items:center;gap:8px;font-size:12px;margin:1px 0;cursor:pointer;border-radius:4px}
 .bar:hover{background:var(--accent-soft)}
 .bar .l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bar .t{height:10px;background:var(--line);border-radius:5px;overflow:hidden}.bar .t i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.bar .t{height:7px;background:var(--line);border-radius:5px;overflow:hidden}.bar .t i{display:block;height:100%;background:var(--accent);border-radius:5px}
 .bar .n{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
 .bar.on{background:var(--accent-soft);outline:1px solid var(--accent)}
 .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
@@ -112,7 +112,7 @@ function fillSelect(id, entries) {
   el.innerHTML = first + entries.map(([k, n]) => `<option value="${esc(k)}">${esc(k)} (${n})</option>`).join("");
 }
 
-function bars(title, entries, key, max = 8) {
+function bars(title, entries, key, max = 5) {
   const top = entries.slice(0, max), peak = top[0] ? top[0][1] : 1;
   return `<div class="card"><h2>${title}</h2>${top.map(([k, n]) =>
     `<div class="bar ${F[key] === k ? "on" : ""}" data-k="${key}" data-v="${esc(k)}" title="Filter by ${esc(k)}"><span class="l">${esc(k)}</span><span class="t"><i style="width:${n / peak * 100}%"></i></span><span class="n">${n}</span></div>`).join("")}</div>`;
@@ -140,7 +140,7 @@ function render() {
   $("charts").innerHTML =
     bars("By state", count(rows, j => j.states), "state") +
     bars("By seniority", count(rows, j => j.seniority), "level") +
-    bars("By company", count(rows, j => j.company), "company", 8) +
+    bars("By company", count(rows, j => j.company), "company") +
     `<div class="card"><h2>By recency</h2>${recency.map(([l, n]) => `<div class="bar" style="cursor:default"><span class="l">${l}</span><span class="t"><i style="width:${n / Math.max(1, ...recency.map(r => r[1])) * 100}%"></i></span><span class="n">${n}</span></div>`).join("")}</div>`;
 
   const pages = Math.max(1, Math.ceil(rows.length / PER));
