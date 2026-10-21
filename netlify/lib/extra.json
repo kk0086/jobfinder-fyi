@@ -1,1 +1,157 @@
-[]
+[
+{
+"kind": "workday",
+"name": "Workday",
+"host": "workday.wd5.myworkdayjobs.com",
+"tenant": "workday",
+"site": "Workday"
+},
+{
+"kind": "workday",
+"name": "CrowdStrike",
+"host": "crowdstrike.wd5.myworkdayjobs.com",
+"tenant": "crowdstrike",
+"site": "crowdstrikecareers"
+},
+{
+"kind": "workday",
+"name": "Target",
+"host": "target.wd5.myworkdayjobs.com",
+"tenant": "target",
+"site": "targetcareers"
+},
+{
+"kind": "workday",
+"name": "Visa",
+"host": "visa.wd5.myworkdayjobs.com",
+"tenant": "visa",
+"site": "Visa"
+},
+{
+"kind": "workday",
+"name": "Hewlett Packard Enterprise",
+"host": "hpe.wd5.myworkdayjobs.com",
+"tenant": "hpe",
+"site": "Jobsathpe"
+},
+{
+"kind": "workday",
+"name": "Autodesk",
+"host": "autodesk.wd1.myworkdayjobs.com",
+"tenant": "autodesk",
+"site": "Ext"
+},
+{
+"kind": "workday",
+"name": "Zendesk",
+"host": "zendesk.wd1.myworkdayjobs.com",
+"tenant": "zendesk",
+"site": "zendesk"
+},
+{
+"kind": "workday",
+"name": "Intel",
+"host": "intel.wd1.myworkdayjobs.com",
+"tenant": "intel",
+"site": "External"
+},
+{
+"kind": "workday",
+"name": "Zillow",
+"host": "zillow.wd5.myworkdayjobs.com",
+"tenant": "zillow",
+"site": "Zillow_Group_External"
+},
+{
+"kind": "workday",
+"name": "HP Inc.",
+"host": "hp.wd5.myworkdayjobs.com",
+"tenant": "hp",
+"site": "ExternalCareerSite"
+},
+{
+"kind": "oracle",
+"name": "Goldman Sachs",
+"host": "hdpc.fa.us2.oraclecloud.com",
+"site": "LateralHiring"
+},
+{
+"kind": "oracle",
+"name": "American Express",
+"host": "egug.fa.us2.oraclecloud.com",
+"site": "CX_1"
+},
+{
+"kind": "oracle",
+"name": "BNY",
+"host": "eofe.fa.us2.oraclecloud.com",
+"site": "BNY-Careers"
+},
+{
+"kind": "oracle",
+"name": "Hilton",
+"host": "efet.fa.us2.oraclecloud.com",
+"site": "CX_1"
+},
+{
+"kind": "oracle",
+"name": "Fortinet",
+"host": "edel.fa.us2.oraclecloud.com",
+"site": "CX_2001"
+},
+{
+"kind": "radancy",
+"name": "Citi",
+"origin": "https://jobs.citi.com",
+"prefix": "",
+"org": "287"
+},
+{
+"kind": "radancy",
+"name": "BlackRock",
+"origin": "https://careers.blackrock.com",
+"prefix": "",
+"org": "45831"
+},
+{
+"kind": "radancy",
+"name": "Moody's",
+"origin": "https://careers.moodys.com",
+"prefix": "/en",
+"org": "49841"
+},
+{
+"kind": "radancy",
+"name": "Ford",
+"origin": "https://www.careers.ford.com",
+"prefix": "/en",
+"org": "48560"
+},
+{
+"kind": "jibe",
+"name": "AMD",
+"origin": "https://careers.amd.com"
+},
+{
+"kind": "eightfold",
+"name": "Micron Technology",
+"host": "careers.micron.com",
+"domain": "micron.com",
+"careersBase": "https://careers.micron.com/careers/job",
+"queries": [
+""
+],
+"pagesPer": 150
+},
+{
+"kind": "eightfold",
+"name": "Starbucks",
+"host": "apply.starbucks.com",
+"domain": "starbucks.com",
+"careersBase": "https://apply.starbucks.com/careers/job",
+"queries": [
+""
+],
+"pagesPer": 150
+}
+]

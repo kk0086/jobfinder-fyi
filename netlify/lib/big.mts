@@ -115,6 +115,10 @@ function radancy(name: string, origin: string, prefix: string, org: string): Rea
       const dm = d && /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(d[1]);
       out.push({ company: name, title: t ? dec(t[1]) : "", location: l ? dec(l[1]) : "", department: "", url: origin + m[1], posted: dm ? `${dm[3]}-${dm[1].padStart(2, "0")}-${dm[2].padStart(2, "0")}` : null });
     }
+    if (!out.length) for (const c of html.split('class="sr-job-item"').slice(1)) { // alternate TalentBrew layout (Citi and others)
+      const a = /<a [^>]*href="([^"]*\/job\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/.exec(c); const l = /sr-job-location"[^>]*>([\s\S]*?)<\/span>/.exec(c);
+      if (a) out.push({ company: name, title: dec(a[2]), location: l ? dec(l[1]) : "", department: "", url: origin + a[1], posted: null });
+    }
     return out;
   };
   const page = async (p: number) => { const j = await jget(url(p)); return { html: String(j?.results || ""), }; };
