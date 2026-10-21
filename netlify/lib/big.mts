@@ -304,6 +304,18 @@ function phenom(name: string, origin: string, locale = "us/en", cap = 2000): Rea
   } };
 }
 
+// Atlassian careers: one JSON listing of every role (the site's own endpoint).
+const ATLASSIAN: Reader = { name: "Atlassian", run: async () => {
+  const j = await jget("https://www.atlassian.com/endpoint/careers/listings");
+  if (!Array.isArray(j) || !j.length) throw new Error("no listings");
+  const raw: RawJob[] = j.map((e: any) => {
+    const us = (e.locations || []).filter((l: string) => /united states|\bUSA?\b/i.test(l));
+    return us.length ? { company: "Atlassian", title: e.title, department: e.category || "", location: us.map((l: string) => l.split(" - ").slice(-1)[0].trim() || l).join("; "),
+      url: `https://www.atlassian.com/company/careers/details/${e.id}`, posted: e.portalJobPost?.updatedDate ? String(e.portalJobPost.updatedDate).slice(0, 10) : null } : null;
+  }).filter(Boolean) as RawJob[];
+  return { raw, assumeUS: true };
+} };
+
 export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
@@ -337,6 +349,7 @@ export const BIG: Reader[] = [
   sitemapJobs("Meta", "https://www.metacareers.com/jobsearch/sitemap.xml", /job_details\/\d+/, 1, 2),
   sitemapJobs("Activision Blizzard", "https://careers.activision.com/sitemap.xml", /careers\.activision\.com\/job\//),
   ...(extra as Spec[]).map(fromSpec),
+  ATLASSIAN,
 ];
 
 export async function crawlBig(i: number) {

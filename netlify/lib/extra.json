@@ -153,5 +153,35 @@
 ""
 ],
 "pagesPer": 150
+},
+{
+"kind": "phenom",
+"name": "eBay",
+"origin": "https://jobs.ebayinc.com",
+"locale": "us/en"
+},
+{
+"kind": "phenom",
+"name": "Chewy",
+"origin": "https://careers.chewy.com",
+"locale": "us/en"
+},
+{
+"kind": "phenom",
+"name": "Lowe's",
+"origin": "https://talent.lowes.com",
+"locale": "us/en"
+},
+{
+"kind": "phenom",
+"name": "Cisco",
+"origin": "https://careers.cisco.com",
+"locale": "global/en"
+},
+{
+"kind": "phenom",
+"name": "UPS",
+"origin": "https://www.jobs-ups.com",
+"locale": "us/en"
 }
 ]
