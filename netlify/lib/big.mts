@@ -102,6 +102,29 @@ const JPM: Reader = { name: "JPMorgan Chase", run: async () => {
   return { raw, assumeUS: true };
 } };
 
+
+// Radancy / TalentBrew career sites (Intuit, Palo Alto Networks): the site's own results endpoint lists every role, 100 per page.
+function radancy(name: string, origin: string, prefix: string, org: string): Reader {
+  const url = (p: number) => `${origin}${prefix}/search-jobs/results?ActiveFacetID=0&CurrentPage=${p}&RecordsPerPage=100&Distance=50&RadiusUnitType=0&Keywords=&Location=&ShowRadius=False&IsPagination=False&CustomFacetName=&FacetTerm=&FacetType=0&SearchResultsModuleName=Search+Results&SortCriteria=0&SortDirection=0&SearchType=5&OrganizationIds=${org}&PostalCode=&ResultsType=0&fc=&fl=&fcf=&afc=&afl=&afcf=`;
+  const dec = (t: string) => t.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;|&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
+  const parse = (html: string): RawJob[] => {
+    const out: RawJob[] = []; const re = /<a href="([^"]*\/job\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g; let m: RegExpExecArray | null;
+    while ((m = re.exec(html))) {
+      const t = /<h2[^>]*>([\s\S]*?)<\/h2>/.exec(m[2]); const l = /class="job-location"[^>]*>([\s\S]*?)<\/span>/.exec(m[2]); const d = /job-date-posted"[^>]*>([\s\S]*?)<\/span>/.exec(m[2]);
+      const dm = d && /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(d[1]);
+      out.push({ company: name, title: t ? dec(t[1]) : "", location: l ? dec(l[1]) : "", department: "", url: origin + m[1], posted: dm ? `${dm[3]}-${dm[1].padStart(2, "0")}-${dm[2].padStart(2, "0")}` : null });
+    }
+    return out;
+  };
+  const page = async (p: number) => { const j = await jget(url(p)); return { html: String(j?.results || ""), }; };
+  return { name, run: async () => {
+    const first = await page(1);
+    const tp = Number(/data-total-pages="(\d+)"/.exec(first.html)?.[1] || 1);
+    const rest = await pool(range(2, Math.min(tp, 30) + 1, 1), 6, async p => (await page(p)).html);
+    return { raw: [first.html, ...rest].flatMap(h => (h ? parse(h) : [])) };
+  } };
+}
+
 export const BIG: Reader[] = [
   AMAZON,
   eightfold("Microsoft", "apply.careers.microsoft.com", "microsoft.com", "https://apply.careers.microsoft.com/careers/job", QUERIES, 30),
@@ -112,6 +135,8 @@ export const BIG: Reader[] = [
   workday("Salesforce", "salesforce.wd12.myworkdayjobs.com", "salesforce", "External_Career_Site"),
   workday("Adobe", "adobe.wd5.myworkdayjobs.com", "adobe", "external_experienced"),
   workday("Mastercard", "mastercard.wd1.myworkdayjobs.com", "mastercard", "CorporateCareers"),
+  radancy("Intuit", "https://jobs.intuit.com", "", "27595"),
+  radancy("Palo Alto Networks", "https://jobs.paloaltonetworks.com", "/en", "47263"),
 ];
 
 export async function crawlBig(i: number) {
