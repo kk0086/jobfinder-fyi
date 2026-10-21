@@ -211,7 +211,7 @@ const APPLE: Reader = { name: "Apple", run: async () => {
 
 // Generic reader: job sitemap -> each job page's schema.org JobPosting data (only the first bytes of each page are read).
 function sitemapJobs(name: string, sitemap: string, urlRe: RegExp, part = 0, parts = 1, assumeUS = false): Reader {
-  const BROWSER = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", "accept-language": "en-US,en;q=0.9" };
+  const BROWSER = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "accept-language": "en-US,en;q=0.9", "sec-fetch-dest": "document", "sec-fetch-mode": "navigate", "sec-fetch-site": "none", "upgrade-insecure-requests": "1" };
   const readLd = async (url: string): Promise<any | null> => {
     const r = await fetch(url, { headers: BROWSER, signal: AbortSignal.timeout(10000) });
     if (!r.ok || !r.body) return null;
