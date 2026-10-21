@@ -55,7 +55,6 @@ details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px
     <select id="fd"><option value="">All departments</option></select>
     <select id="fl"><option value="">All seniority</option></select>
     <select id="fr"><option value="">Remote + onsite</option><option value="1">Remote only</option><option value="0">Onsite only</option></select>
-    <select id="fp"><option value="">Any salary</option><option value="listed">Salary listed</option><option value="150000">$150K+</option><option value="200000">$200K+</option><option value="250000">$250K+</option><option value="300000">$300K+</option></select>
     <label class="chk"><input id="ffit" type="checkbox"> Director, Principal, Staff and up</label>
     <button id="reset">Reset</button>
   </div>
@@ -79,7 +78,7 @@ const jobs = DATA.jobs.map(j => {
   return {...j, ts: p ?? u, tsKind: p ? "Posted" : (u ? "Updated" : "")};
 });
 const FIT = ["Director", "Executive", "Principal+"];
-const DEFAULTS = {company:"", state:"", dept:"", level:"", remote:"", salary:"", q:"", role:"Product management", domain:"", fit:false};
+const DEFAULTS = {company:"", state:"", dept:"", level:"", remote:"", q:"", role:"Product management", domain:"", fit:false};
 const F = {...DEFAULTS};
 let page = 0; const PER = 50;
 
@@ -105,7 +104,6 @@ function filtered(skip) {
     (!F.dept || j.department === F.dept) &&
     (!F.level || j.seniority === F.level) &&
     (F.remote === "" || (F.remote === "1") === j.remote) &&
-    (!F.salary || (F.salary === "listed" ? (j.salary_min || j.salary_max) : Math.max(j.salary_min || 0, j.salary_max || 0) >= +F.salary)) &&
     (!q || (j.title + " " + j.company + " " + j.location).toLowerCase().includes(q))
   ).sort((a, b) => (FIT.includes(b.seniority) - FIT.includes(a.seniority)) || ((b.ts || 0) - (a.ts || 0)));
 }
@@ -182,7 +180,7 @@ function init() {
     DATA.companies.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.ats || "")}</td><td class="s-${esc(c.status || "")}">${esc(c.status || "")}</td><td>${esc(c.note || "")}</td></tr>`).join("");
   const bind = (id, key, ev = "change") => $(id).addEventListener(ev, e => { F[key] = e.target.value; page = 0; sync(); render(); });
   bind("frole", "role"); bind("fdomain", "domain"); $("ffit").addEventListener("change", e => { F.fit = e.target.checked; page = 0; render(); });
-  bind("fc", "company"); bind("fs", "state"); bind("fd", "dept"); bind("fl", "level"); bind("fr", "remote"); bind("fp", "salary"); bind("q", "q", "input");
+  bind("fc", "company"); bind("fs", "state"); bind("fd", "dept"); bind("fl", "level"); bind("fr", "remote"); bind("q", "q", "input");
   $("reset").onclick = () => { Object.assign(F, DEFAULTS); $("q").value = ""; page = 0; sync(); render(); };
   const pgClick = e => { const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return; page += +b.dataset.pg; render(); (e.currentTarget.id === "pgBot" ? $("count") : $("pgTop")).scrollIntoView({ block: "start" }); };
   $("pgTop").onclick = pgClick; $("pgBot").onclick = pgClick;
@@ -192,7 +190,7 @@ function init() {
   });
   render();
 }
-function sync() { $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; $("fc").value = F.company; $("fs").value = F.state; $("fd").value = F.dept; $("fl").value = F.level; $("fr").value = F.remote; $("fp").value = F.salary; }
+function sync() { $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; $("fc").value = F.company; $("fs").value = F.state; $("fd").value = F.dept; $("fl").value = F.level; $("fr").value = F.remote; }
 init();
 </script>
 </body>
