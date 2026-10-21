@@ -1,24 +1,17 @@
 import { getStore } from "@netlify/blobs";
 import type { Config } from "@netlify/functions";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { isOwner } from "../lib/auth.mts";
+import { getStore as gs } from "@netlify/blobs";
+import { CHUNKS } from "../lib/crawl.mts";
 import coverage from "./coverage.json" with { type: "json" };
 
-// SHA-256 of the owner's admin key (the key itself is never stored in the repo).
-const KEY_HASH = "e4c18a31f0ecf58d21e1b0e4934d439540bb2fb59e50e1bd82e8c5a1f73b3743";
 
 // Owner-only. The admin key is sent as the x-admin-key header.
-const ok = (given: string, real: string) => {
-  const a = Buffer.from(given), b = Buffer.from(real);
-  return a.length === b.length && timingSafeEqual(a, b);
-};
 const top = (m: Map<string, number>, n = 10) => [...m].sort((a, b) => b[1] - a[1]).slice(0, n);
 const inc = (m: Map<string, number>, k: string, by = 1) => k && m.set(k, (m.get(k) || 0) + by);
 
 export default async (req: Request) => {
-  const given = req.headers.get("x-admin-key") || "";
-  const env = Netlify.env.get("ADMIN_KEY") || "";
-  const hashOk = !!given && ok(createHash("sha256").update(given).digest("hex"), KEY_HASH);
-  if (!hashOk && !(env && given && ok(given, env))) return new Response("Unauthorized", { status: 401, headers: { "cache-control": "no-store" } });
+  if (!isOwner(req)) return new Response("Unauthorized", { status: 401, headers: { "cache-control": "no-store" } });
 
   const days = Math.max(1, Math.min(90, +(new URL(req.url).searchParams.get("days") || 30)));
   const store = getStore("sessions");
@@ -72,6 +65,10 @@ export default async (req: Request) => {
     })),
     truncated: sessions.length >= 20000,
     coverage,
+    refresh: await Promise.all(Array.from({ length: CHUNKS }, async (_, i) => {
+      const b: any = await gs("feed").get(`chunk-${i}`, { type: "json" }).catch(() => null);
+      return b ? { chunk: i, at: b.at, companies: b.report.length, failed: b.report.filter((r: any) => !r.ok).map((r: any) => r.name + (r.error ? ` (${r.error})` : "")), roles: b.jobs.length } : { chunk: i, at: null };
+    })),
   };
   return new Response(JSON.stringify(body), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
 };

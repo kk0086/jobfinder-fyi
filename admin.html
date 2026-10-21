@@ -27,6 +27,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px 6px;text-align:left;
 <div class="tiles" id="tiles"></div>
 <div class="card"><h2>Visitors per day</h2><div class="chart" id="chart"></div><div class="sub" id="axis" style="display:flex;justify-content:space-between;margin:4px 0 0"></div></div>
 <div class="grid" id="grid"></div>
+<div class="card" id="refcard" style="margin-top:12px"><h2>Live job refresh</h2><div id="refsum" class="sub"></div><button id="refnow">Refresh all companies now</button> <span id="refmsg" class="sub"></span></div>
 <div class="card" id="covcard" style="margin-top:12px"><h2>Job data coverage</h2><div id="covsum" class="sub"></div><details><summary style="cursor:pointer">Coverage by company</summary><div style="overflow:auto;margin-top:8px"><table id="cov"></table></div></details></div>
 <div class="card" style="margin-top:12px"><h2>Recent visits</h2><div style="overflow:auto"><table id="recent"></table></div></div>
 </div></div>
@@ -50,10 +51,13 @@ async function load(){
   const list=(h,a)=>`<div class="card"><h2>${h}</h2>${a.length?a.map(([k,n])=>`<div class="row"><span title="${esc(k)}">${esc(k)}</span><span>${n}</span></div>`).join(""):'<div class="sub">No data yet</div>'}</div>`;
   $("grid").innerHTML=list("Countries",d.countries)+list("Devices",d.devices)+list("Referrers",d.referrers)+list("Most clicked companies",d.topCompanies)+list("Most clicked jobs",d.topJobs);
   $("recent").innerHTML="<tr><th>When</th><th>Where</th><th>Device</th><th>Source</th><th>Time</th><th>Views</th><th>Clicks</th><th></th></tr>"+d.recent.map(s=>`<tr><td>${ago(s.when)}</td><td>${esc(s.country||"—")}</td><td>${s.device}</td><td>${esc(s.ref||"Direct")}</td><td>${dur(s.active)}</td><td>${s.views}</td><td>${s.clicks}</td><td>${s.returning?"returning":"new"}</td></tr>`).join("");
+  const R=d.refresh||[],done=R.filter(r=>r.at),last=done.length?new Date(Math.max(...done.map(r=>+new Date(r.at)))):null,fails=done.flatMap(r=>r.failed);
+  $("refsum").innerHTML=(done.length?`${done.length} of ${R.length} batches have run; most recent ${last.toLocaleString()}. ${done.reduce((n,r)=>n+r.roles,0).toLocaleString()} roles from ${done.reduce((n,r)=>n+r.companies,0)} company job boards.`:"No refresh has run yet. It runs automatically every morning (about 6 AM Pacific).")+(fails.length?` <b>${fails.length} boards failed on the last run:</b> ${esc(fails.slice(0,8).join(", "))}${fails.length>8?"…":""}`:"");
   const cv=d.coverage,cs=cv.companies,N=x=>cs.filter(c=>c.status===x).length;
   $("covsum").innerHTML=`<b>Coverage.</b> ${cs.length} companies tracked. Complete job feeds were read for ${N("ok")}. ${N("partial")} more were read only in part (mainly senior roles). ${N("unsupported")} have no public job feed (their own or Workday careers sites), so their roles are not included.`+(cv.inferred_departments?` Departments are guessed from job titles for ${cv.inferred_departments} roles.`:"")+(cv.generated_at?` Job data as of ${new Date(cv.generated_at).toLocaleString()}.`:"");
   $("cov").innerHTML="<tr><th>Company</th><th>Source</th><th>Status</th><th>Note</th></tr>"+cs.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.ats||"")}</td><td class="s-${esc(c.status||"")}">${esc(c.status||"")}</td><td>${esc(c.note||"")}</td></tr>`).join("");
 }
+$("refnow").onclick=async()=>{const b=$("refnow");b.disabled=true;try{for(let i=0;i<6;i++){$("refmsg").textContent=`Reading batch ${i+1} of 6…`;const r=await fetch("/api/refresh?chunk="+i,{method:"POST",headers:{"x-admin-key":KEY}});if(!r.ok)throw new Error("batch "+(i+1)+" failed ("+r.status+")")}$("refmsg").textContent="Done.";await load()}catch(e){$("refmsg").textContent=String(e.message||e)}b.disabled=false};
 $("f").onsubmit=e=>{e.preventDefault();KEY=$("k").value;$("e").textContent="";load()};
 $("days").onchange=load;$("rf").onclick=load;$("out").onclick=()=>{try{sessionStorage.removeItem("jfk")}catch{};location.reload()};
 if(KEY)load();
