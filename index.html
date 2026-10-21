@@ -37,6 +37,7 @@ h1{font-size:22px;margin:0}
 .cov{width:100%;border-collapse:collapse;font-size:13px}.cov td,.cov th{padding:5px 6px;text-align:left;border-bottom:1px solid var(--line)}
 .s-ok{color:var(--ok)}.s-partial{color:var(--warn)}.s-failed,.s-unsupported{color:var(--bad)}.s-queued{color:var(--muted,#888)}
 .chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);white-space:nowrap}
+.pager{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0;font-size:13px}.pager button:disabled{opacity:.4;cursor:default}
 button{font:inherit;padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer}
 details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px}
 @media (max-width:520px){.bar{grid-template-columns:80px 1fr 34px}.job{grid-template-columns:1fr}.job .r{grid-row:auto;grid-column:1;text-align:left}}
@@ -63,8 +64,9 @@ details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px
   <div class="tiles" id="tiles"></div>
   <div class="charts" id="charts"></div>
   <div class="meta" id="count"></div>
+  <div class="pager" id="pgTop"></div>
   <div class="list" id="list"></div>
-  <button id="more" style="display:none;margin:10px auto 0">Show more</button>
+  <div class="pager" id="pgBot"></div>
   <details><summary>Coverage by company</summary><div class="card" style="margin-top:8px"><table class="cov" id="cov"></table></div></details>
 </div>
 <script>
@@ -79,7 +81,7 @@ const jobs = DATA.jobs.map(j => {
 const FIT = ["Director", "Executive", "Principal+"];
 const DEFAULTS = {company:"", state:"", dept:"", level:"", remote:"", days:"", q:"", role:"Product management", domain:"", fit:false};
 const F = {...DEFAULTS};
-let shown = 50;
+let page = 0; const PER = 50;
 
 const ago = ts => {
   if (!ts) return "date n/a";
@@ -144,14 +146,18 @@ function render() {
     bars("By company", count(rows, j => j.company), "company", 8) +
     `<div class="card"><h2>By recency</h2>${recency.map(([l, n]) => `<div class="bar" style="cursor:default"><span class="l">${l}</span><span class="t"><i style="width:${n / Math.max(1, ...recency.map(r => r[1])) * 100}%"></i></span><span class="n">${n}</span></div>`).join("")}</div>`;
 
-  $("count").textContent = `${rows.length.toLocaleString()} roles` + (rows.length > shown ? `, showing ${shown}` : "");
-  $("list").innerHTML = rows.slice(0, shown).map(j => `
+  const pages = Math.max(1, Math.ceil(rows.length / PER));
+  if (page >= pages) page = pages - 1;
+  const lo = page * PER;
+  $("count").textContent = `${rows.length.toLocaleString()} roles` + (rows.length > PER ? `, showing ${lo + 1}–${Math.min(rows.length, lo + PER)}` : "");
+  const pg = rows.length > PER ? `<button data-pg="-1" ${page === 0 ? "disabled" : ""}>← Previous</button><span>Page ${page + 1} of ${pages}</span><button data-pg="1" ${page >= pages - 1 ? "disabled" : ""}>Next →</button>` : "";
+  $("pgTop").innerHTML = pg; $("pgBot").innerHTML = pg;
+  $("list").innerHTML = rows.slice(lo, lo + PER).map(j => `
     <a class="job" href="${esc(j.url)}" target="_blank" rel="noopener noreferrer">
       <span class="t">${esc(j.title)}${j.remote ? '<span class="tag">Remote</span>' : ""}${j.example ? '<span class="tag">Your example</span>' : ""}${FIT.includes(j.seniority) ? '<span class="tag">' + esc(j.seniority === "Principal+" ? "Staff / Principal / Group" : j.seniority) + '</span>' : ""}</span>
       <span class="r">${j.tsKind ? j.tsKind + " " : ""}${ago(j.ts)}</span>
       <span class="c">${esc(j.company)} · ${esc(j.location || "Location n/a")} · ${esc(j.department)}${j.salary_min ? " · " + money(j.salary_min) + (j.salary_max ? "–" + money(j.salary_max) : "") : ""}</span>
     </a>`).join("") || '<div class="meta">No roles match these filters.</div>';
-  $("more").style.display = rows.length > shown ? "block" : "none";
 }
 
 function init() {
@@ -174,14 +180,15 @@ function init() {
   fillSelect("fl", count(jobs, j => j.seniority));
   $("cov").innerHTML = "<tr><th>Company</th><th>Source</th><th>Status</th><th>Note</th></tr>" +
     DATA.companies.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.ats || "")}</td><td class="s-${esc(c.status || "")}">${esc(c.status || "")}</td><td>${esc(c.note || "")}</td></tr>`).join("");
-  const bind = (id, key, ev = "change") => $(id).addEventListener(ev, e => { F[key] = e.target.value; shown = 50; sync(); render(); });
-  bind("frole", "role"); bind("fdomain", "domain"); $("ffit").addEventListener("change", e => { F.fit = e.target.checked; shown = 50; render(); });
+  const bind = (id, key, ev = "change") => $(id).addEventListener(ev, e => { F[key] = e.target.value; page = 0; sync(); render(); });
+  bind("frole", "role"); bind("fdomain", "domain"); $("ffit").addEventListener("change", e => { F.fit = e.target.checked; page = 0; render(); });
   bind("fc", "company"); bind("fs", "state"); bind("fd", "dept"); bind("fl", "level"); bind("fr", "remote"); bind("fp", "days"); bind("q", "q", "input");
-  $("reset").onclick = () => { Object.assign(F, DEFAULTS); $("q").value = ""; shown = 50; sync(); render(); };
-  $("more").onclick = () => { shown += 50; render(); };
+  $("reset").onclick = () => { Object.assign(F, DEFAULTS); $("q").value = ""; page = 0; sync(); render(); };
+  const pgClick = e => { const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return; page += +b.dataset.pg; render(); (e.currentTarget.id === "pgBot" ? $("count") : $("pgTop")).scrollIntoView({ block: "start" }); };
+  $("pgTop").onclick = pgClick; $("pgBot").onclick = pgClick;
   $("charts").addEventListener("click", e => {
     const b = e.target.closest(".bar[data-k]"); if (!b) return;
-    const k = b.dataset.k, v = b.dataset.v; F[k] = F[k] === v ? "" : v; shown = 50; sync(); render();
+    const k = b.dataset.k, v = b.dataset.v; F[k] = F[k] === v ? "" : v; page = 0; sync(); render();
   });
   render();
 }
