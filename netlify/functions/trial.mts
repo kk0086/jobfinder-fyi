@@ -19,7 +19,7 @@ export default async (req: Request) => {
     try {
       const { raw, assumeUS } = await fromSpec(s).run();
       const kept = raw.map(x => normalizeJob(x, { assumeUS })).filter(Boolean) as any[];
-      return { name: s.name, ok: true, raw: raw.length, kept: kept.length, ms: Date.now() - t, sample: raw.slice(0, 2).map(r => `${r.title} | ${r.location} | ${r.url}`) };
+      return { name: s.name, ok: true, raw: raw.length, kept: kept.length, ms: Date.now() - t, sample: raw.slice(0, 2).map(r => `${r.title} | ${r.location} | ${r.url}`), dropped: raw.filter(x => !normalizeJob(x, { assumeUS })).slice(0, 3).map(r => `${r.title} | ${r.location}`) };
     } catch (e: any) { return { name: s.name, ok: false, ms: Date.now() - t, error: String(e?.message || e).slice(0, 120) }; }
   }));
   return Response.json(out);

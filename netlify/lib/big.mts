@@ -345,7 +345,7 @@ const NIKE: Reader = { name: "Nike", run: async () => {
   return { raw: [...seen.values()] };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap"; name: string; [k: string]: any };
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -353,6 +353,7 @@ export function fromSpec(s: Spec): Reader {
     case "radancy": return radancy(s.name, s.origin, s.prefix || "", String(s.org));
     case "eightfold": return eightfold(s.name, s.host, s.domain, s.careersBase, s.queries || QUERIES, s.pagesPer || 30);
     case "jibe": return jibe(s.name, s.origin);
+    case "builtin": { const b = BIG.find(x => x.name === s.name); if (!b) throw new Error("not found"); return b; }
     case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
     case "phenom": return phenom(s.name, s.origin, s.locale || "us/en");
   }
