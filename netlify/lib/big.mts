@@ -324,11 +324,12 @@ const NIKE: Reader = { name: "Nike", run: async () => {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const h = await r.text();
     const total = Number(/of (\d[\d,]*) jobs/i.exec(h)?.[1]?.replace(/,/g, "") || 0);
-    const rows = h.split('\\"requisitionID\\":\\"').slice(1).map(c => {
-      const id = /^([^\\]+)\\"/.exec(c)?.[1]; const t = /\\"title\\":\\"((?:(?!\\").)*)\\"/.exec(c)?.[1];
-      const cs = /\\"cityState\\":\\"((?:(?!\\").)*)\\"/.exec(c)?.[1] || ""; const country = /\\"countryAbbr\\":\\"([A-Z]{2})\\"/.exec(c)?.[1] || "";
+    const dj = (t?: string) => { if (!t) return ""; try { return JSON.parse(`"${t}"`) as string; } catch { return t; } };
+    const rows = h.split('"requisitionID":"').slice(1).map(c => {
+      const id = /^([^"]+)"/.exec(c)?.[1]; const t = /"title":"((?:[^"\\]|\\.)*)"/.exec(c)?.[1];
+      const cs = dj(/"cityState":"((?:[^"\\]|\\.)*)"/.exec(c)?.[1]); const country = /"countryAbbr":"([A-Z]{2})"/.exec(c)?.[1] || "";
       if (!id || !t) return null;
-      const title = t.replace(/\\+u0026/g, "&").replace(/\\+\//g, "/");
+      const title = dj(t);
       const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       return { company: "Nike", title, location: country === "US" ? cs : cs ? `${cs}, ${country}` : "", department: "", url: `https://careers.nike.com/${slug}/job/${id}`, posted: null } as RawJob;
     }).filter(Boolean) as RawJob[];
