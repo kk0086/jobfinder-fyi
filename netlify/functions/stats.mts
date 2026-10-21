@@ -1,8 +1,11 @@
 import { getStore } from "@netlify/blobs";
 import type { Config } from "@netlify/functions";
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 
-// Owner-only. Requires the ADMIN_KEY environment variable to be sent as the x-admin-key header.
+// SHA-256 of the owner's admin key (the key itself is never stored in the repo).
+const KEY_HASH = "e4c18a31f0ecf58d21e1b0e4934d439540bb2fb59e50e1bd82e8c5a1f73b3743";
+
+// Owner-only. The admin key is sent as the x-admin-key header.
 const ok = (given: string, real: string) => {
   const a = Buffer.from(given), b = Buffer.from(real);
   return a.length === b.length && timingSafeEqual(a, b);
@@ -11,9 +14,10 @@ const top = (m: Map<string, number>, n = 10) => [...m].sort((a, b) => b[1] - a[1
 const inc = (m: Map<string, number>, k: string, by = 1) => k && m.set(k, (m.get(k) || 0) + by);
 
 export default async (req: Request) => {
-  const key = Netlify.env.get("ADMIN_KEY") || "";
   const given = req.headers.get("x-admin-key") || "";
-  if (!key || !given || !ok(given, key)) return new Response("Unauthorized", { status: 401, headers: { "cache-control": "no-store" } });
+  const env = Netlify.env.get("ADMIN_KEY") || "";
+  const hashOk = !!given && ok(createHash("sha256").update(given).digest("hex"), KEY_HASH);
+  if (!hashOk && !(env && given && ok(given, env))) return new Response("Unauthorized", { status: 401, headers: { "cache-control": "no-store" } });
 
   const days = Math.max(1, Math.min(90, +(new URL(req.url).searchParams.get("days") || 30)));
   const store = getStore("sessions");
