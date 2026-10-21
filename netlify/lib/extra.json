@@ -183,5 +183,32 @@
 "name": "UPS",
 "origin": "https://www.jobs-ups.com",
 "locale": "us/en"
+},
+{
+"kind": "workday",
+"name": "Snap",
+"host": "snapchat.wd1.myworkdayjobs.com",
+"tenant": "snapchat",
+"site": "snap"
+},
+{
+"kind": "workday",
+"name": "Expedia Group",
+"host": "expedia.wd108.myworkdayjobs.com",
+"tenant": "expedia",
+"site": "search"
+},
+{
+"kind": "workday",
+"name": "The Home Depot",
+"host": "homedepot.wd5.myworkdayjobs.com",
+"tenant": "homedepot",
+"site": "CareerDepot"
+},
+{
+"kind": "sitemap",
+"name": "Shopify",
+"sitemap": "https://www.shopify.com/careers/sitemap.xml",
+"pattern": "/careers/[a-z0-9-]+_[0-9a-f-]{36}$"
 }
 ]

@@ -316,7 +316,7 @@ const ATLASSIAN: Reader = { name: "Atlassian", run: async () => {
   return { raw, assumeUS: true };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom"; name: string; [k: string]: any };
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -324,6 +324,7 @@ export function fromSpec(s: Spec): Reader {
     case "radancy": return radancy(s.name, s.origin, s.prefix || "", String(s.org));
     case "eightfold": return eightfold(s.name, s.host, s.domain, s.careersBase, s.queries || QUERIES, s.pagesPer || 30);
     case "jibe": return jibe(s.name, s.origin);
+    case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
     case "phenom": return phenom(s.name, s.origin, s.locale || "us/en");
   }
   throw new Error("unknown kind");
