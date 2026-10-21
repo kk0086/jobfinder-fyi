@@ -1,4 +1,5 @@
 import { normalizeJob, type Job, type RawJob } from "./normalize.mts";
+import extra from "./extra.json" with { type: "json" };
 
 // Readers for large companies that have their own careers systems (not Greenhouse/Ashby/Lever).
 // Each returns raw roles; the caller normalizes them into role families.
@@ -246,6 +247,49 @@ function sitemapJobs(name: string, sitemap: string, urlRe: RegExp, part = 0, par
   } };
 }
 
+// Oracle Recruiting (HCM) candidate sites: same API JPMorgan uses; US roles only.
+function oracle(name: string, host: string, site: string): Reader {
+  const api = (o: number) => `https://${host}/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=${site},limit=50,offset=${o},sortBy=POSTING_DATES_DESC`;
+  return { name, run: async () => {
+    const first = await jget(api(0), { headers: { accept: "application/json" } });
+    const total = Number(first?.items?.[0]?.TotalJobsCount || 0);
+    const rest = await pool(range(50, Math.min(total, 3000), 50), 8, o => jget(api(o), { headers: { accept: "application/json" } }));
+    const raw: RawJob[] = [first, ...rest].flatMap(p => p?.items?.[0]?.requisitionList || []).filter((p: any) => /^(US|USA|United States)$/i.test(p.PrimaryLocationCountry || "")).map((p: any) => ({
+      company: name, title: p.Title, location: (p.PrimaryLocation || "").replace(/,?\s*United States$/, ""), department: p.JobFamily || "",
+      url: `https://${host}/hcmUI/CandidateExperience/en/sites/${site}/job/${p.Id}`, posted: p.PostedDate || null,
+    }));
+    return { raw, assumeUS: true };
+  } };
+}
+
+// Jibe-powered career sites (AMD, Costco, ...): /api/jobs, 100 per page.
+function jibe(name: string, origin: string): Reader {
+  return { name, run: async () => {
+    const get = (p: number) => jget(`${origin}/api/jobs?page=${p}&limit=100&sortBy=posted_date&descending=true`);
+    const first = await get(1);
+    const total = Number(first?.totalCount || 0);
+    const rest = await pool(range(2, Math.min(Math.ceil(total / 100), 40) + 1, 1), 6, get);
+    const raw: RawJob[] = [first, ...rest].flatMap(p => p?.jobs || []).map((x: any) => x.data || x).map((d: any) => ({
+      company: name, title: d.title, department: (d.categories || [])[0]?.name || d.department || "",
+      location: d.full_location || d.location_name || [d.city, d.state].filter(Boolean).join(", "), country: d.country_code || d.country,
+      url: d.apply_url ? String(d.apply_url).replace(/\/apply.*$/, "") : `${origin}/jobs/${d.slug || d.req_id}`, posted: d.posted_date || d.create_date || null,
+    })).filter((r: any) => !r.country || /^(US|USA|United States)/i.test(r.country));
+    return { raw };
+  } };
+}
+
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe"; name: string; [k: string]: any };
+export function fromSpec(s: Spec): Reader {
+  switch (s.kind) {
+    case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
+    case "oracle": return oracle(s.name, s.host, s.site);
+    case "radancy": return radancy(s.name, s.origin, s.prefix || "", String(s.org));
+    case "eightfold": return eightfold(s.name, s.host, s.domain, s.careersBase, s.queries || QUERIES, s.pagesPer || 30);
+    case "jibe": return jibe(s.name, s.origin);
+  }
+  throw new Error("unknown kind");
+}
+
 export const BIG: Reader[] = [
   AMAZON,
   eightfold("Microsoft", "apply.careers.microsoft.com", "microsoft.com", "https://apply.careers.microsoft.com/careers/job", QUERIES, 30),
@@ -265,6 +309,7 @@ export const BIG: Reader[] = [
   sitemapJobs("Meta", "https://www.metacareers.com/jobsearch/sitemap.xml", /job_details\/\d+/, 0, 2),
   sitemapJobs("Meta", "https://www.metacareers.com/jobsearch/sitemap.xml", /job_details\/\d+/, 1, 2),
   sitemapJobs("Activision Blizzard", "https://careers.activision.com/sitemap.xml", /careers\.activision\.com\/job\//),
+  ...(extra as Spec[]).map(fromSpec),
 ];
 
 export async function crawlBig(i: number) {
