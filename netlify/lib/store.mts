@@ -38,7 +38,7 @@ export async function loadAll() {
 }
 
 export async function jobsPayload(force = false) {
-  if (!force && cache && Date.now() - cache.t < 5 * 60 * 1000) return cache.body;
+  if (!force && cache && Date.now() - cache.t < 60 * 1000) return cache.body;
   const { jobs, at } = await loadAll();
   const { gzipSync } = await import("node:zlib");
   const seedAt = (seed as any).generated_at as string;

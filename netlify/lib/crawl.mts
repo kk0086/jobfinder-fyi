@@ -6,9 +6,9 @@ export const FEEDS = feeds as Feed[];
 export const CHUNKS = 6;
 export const chunkOf = (i: number) => i % CHUNKS;
 
-async function getJson(url: string): Promise<any> {
+async function getJson(url: string, ms = 12000): Promise<any> {
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 15000);
+  const timer = setTimeout(() => ctl.abort(), ms);
   try {
     const r = await fetch(url, { signal: ctl.signal, headers: { accept: "application/json", "user-agent": "jobfinder.fyi job board reader" } });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -56,7 +56,10 @@ export async function crawlChunk(chunk: number, budgetMs = 24000) {
       const f = mine[next++];
       if (Date.now() - started > budgetMs) { report.push({ name: f.name, ok: false, total: 0, kept: 0, error: "out of time" }); continue; }
       try {
-        const raw = await readFeed(f);
+        let raw: RawJob[];
+        try { raw = await readFeed(f); }
+        catch (e) { if (Date.now() - started > 10000) throw e; raw = await readFeed(f); } // one quick retry while there is time
+
         const seen = new Set<string>();
         let kept = 0;
         for (const r of raw) {
