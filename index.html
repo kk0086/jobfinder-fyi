@@ -139,11 +139,9 @@ function render() {
   const undated = rows.filter(j => !j.ts).length;
   if (undated) recency.push(["No date", undated]);
   $("charts").innerHTML =
-    bars("By domain", dcount, "domain", 12) +
     bars("By state", count(rows, j => j.states), "state") +
-    bars("By department", count(rows, j => j.department), "dept") +
     bars("By seniority", count(rows, j => j.seniority), "level") +
-    bars("By company", count(rows, j => j.company), "company") +
+    bars("By company", count(rows, j => j.company), "company", 8) +
     `<div class="card"><h2>By recency</h2>${recency.map(([l, n]) => `<div class="bar" style="cursor:default"><span class="l">${l}</span><span class="t"><i style="width:${n / Math.max(1, ...recency.map(r => r[1])) * 100}%"></i></span><span class="n">${n}</span></div>`).join("")}</div>`;
 
   $("count").textContent = `${rows.length.toLocaleString()} roles` + (rows.length > shown ? `, showing ${shown}` : "");
