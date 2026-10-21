@@ -209,6 +209,43 @@ const APPLE: Reader = { name: "Apple", run: async () => {
   return { raw: raw.filter(r => r.location && r.title), assumeUS: true };
 } };
 
+// Generic reader: job sitemap -> each job page's schema.org JobPosting data (only the first bytes of each page are read).
+function sitemapJobs(name: string, sitemap: string, urlRe: RegExp, part = 0, parts = 1, assumeUS = false): Reader {
+  const BROWSER = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", "accept-language": "en-US,en;q=0.9" };
+  const readLd = async (url: string): Promise<any | null> => {
+    const r = await fetch(url, { headers: BROWSER, signal: AbortSignal.timeout(10000) });
+    if (!r.ok || !r.body) return null;
+    const rd = r.body.getReader(); const dec = new TextDecoder(); let buf = "";
+    try {
+      while (buf.length < 60000) {
+        const { done, value } = await rd.read(); if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const i = buf.search(/"(?:\\u0040|@)type"\s*:\s*"JobPosting"/);
+        if (i >= 0) { const e = buf.indexOf("</script>", i); if (e >= 0) { const st = buf.lastIndexOf("<script", i); const body = buf.slice(buf.indexOf(">", st) + 1, e); return JSON.parse(body.replace(/\\u0040/g, "@")); } }
+      }
+    } finally { rd.cancel().catch(() => {}); }
+    return null;
+  };
+  return { name, run: async () => {
+    const xml = await (await fetch(sitemap, { headers: BROWSER, signal: AbortSignal.timeout(12000) })).text();
+    const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]).filter(u => urlRe.test(u));
+    if (!urls.length) throw new Error("empty sitemap");
+    const mine = urls.filter((_, i) => i % parts === part);
+    const deadline = Date.now() + 24000;
+    const out = await pool(mine, 24, async (u): Promise<RawJob | null> => {
+      if (Date.now() > deadline) return null;
+      const j = await readLd(u); if (!j?.title) return null;
+      const locs = ([] as any[]).concat(j.jobLocation || []);
+      const us = locs.filter(l => { const c = l?.address?.addressCountry; return !c || /^(US|USA|United States)/i.test(typeof c === "string" ? c : c?.name || ""); });
+      if (!us.length && locs.length) return null;
+      return { company: name, title: String(j.title), department: "", location: us.map(l => l?.name || [l?.address?.addressLocality, l?.address?.addressRegion].filter(Boolean).join(", ")).filter(Boolean).join("; "), url: u, posted: j.datePosted ? String(j.datePosted).slice(0, 10) : null };
+    });
+    const raw = out.filter(Boolean) as RawJob[];
+    if (!raw.length) throw new Error("no postings read");
+    return { raw, assumeUS };
+  } };
+}
+
 export const BIG: Reader[] = [
   AMAZON,
   eightfold("Microsoft", "apply.careers.microsoft.com", "microsoft.com", "https://apply.careers.microsoft.com/careers/job", QUERIES, 30),
@@ -225,6 +262,8 @@ export const BIG: Reader[] = [
   UBER,
   ETSY,
   APPLE,
+  sitemapJobs("Meta", "https://www.metacareers.com/jobsearch/sitemap.xml", /job_details\/\d+/, 0, 2),
+  sitemapJobs("Meta", "https://www.metacareers.com/jobsearch/sitemap.xml", /job_details\/\d+/, 1, 2),
 ];
 
 export async function crawlBig(i: number) {
