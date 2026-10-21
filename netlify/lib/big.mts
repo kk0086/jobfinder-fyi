@@ -270,7 +270,8 @@ export async function crawlBig(i: number) {
   const r = BIG[i];
   try {
     const { raw, assumeUS } = await r.run();
-    const seen = new Set<string>(); const jobs: Job[] = [];
+    const seen = new Set<string>(); const jobs: Job[] = [  sitemapJobs("Activision Blizzard", "https://careers.activision.com/sitemap.xml", /careers\.activision\.com\/job\//),
+];
     for (const x of raw) { if (!x.title || !x.url || seen.has(x.url)) continue; seen.add(x.url); const n = normalizeJob(x, { assumeUS }); if (n) jobs.push(n); }
     return { jobs, report: [{ name: r.name, ok: true, total: raw.length, kept: jobs.length }], names: [r.name] };
   } catch (e: any) {
