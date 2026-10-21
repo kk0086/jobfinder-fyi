@@ -170,8 +170,8 @@ const APPLE: Reader = { name: "Apple", run: async () => {
   const rest = await pool(range(2, pages + 1, 1), 12, async p => (Date.now() > deadline ? [] : (await get(p)).rows));
   const raw: RawJob[] = [first.rows, ...rest].flatMap(x => x || []).map((e: any) => ({
     company: "Apple", title: e.postingTitle, department: e.team?.teamName || "",
-    location: (e.locations || []).filter((l: any) => /united states/i.test(l.countryName || "")).map((l: any) => [l.city, l.stateProvince].filter(Boolean).join(", ")).join("; "),
-    url: `https://jobs.apple.com/en-us/details/${e.positionId}/${e.transformedPostingTitle || ""}`, posted: e.postingDate ? new Date(e.postingDate).toISOString().slice(0, 10) : null,
+    location: (e.locations || []).filter((l: any) => /united states/i.test(l.countryName || "")).map((l: any) => [l.city, l.stateProvince].filter(Boolean).join(", ") || l.name || "United States").join("; "),
+    url: `https://jobs.apple.com/en-us/details/${e.positionId}/${e.transformedPostingTitle || ""}`, posted: e.postDateInGMT ? String(e.postDateInGMT).slice(0, 10) : null,
   }));
   return { raw: raw.filter(r => r.location), assumeUS: true };
 } };
