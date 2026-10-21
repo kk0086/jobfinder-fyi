@@ -56,7 +56,7 @@ function eightfold(name: string, host: string, domain: string, careersBase: stri
   return { name, run: async () => {
     const jobs = new Map<string, RawJob>();
     const reqs = queries.flatMap(q => range(0, pagesPer * 10, 10).map(s => ({ q, s })));
-    await pool(reqs, 10, async ({ q, s }) => {
+    await pool(reqs, 16, async ({ q, s }) => {
       const j = await jget(`https://${host}/api/pcsx/search?domain=${domain}&query=${encodeURIComponent(q)}&location=United%20States&start=${s}&sort_by=timestamp`);
       for (const p of j?.data?.positions || []) {
         const loc = (p.standardizedLocations?.[0] || p.locations?.[0] || "").replace(/, US$/, "").replace(/^United States, /, "").replace(", United States of America", "");
@@ -104,7 +104,7 @@ const JPM: Reader = { name: "JPMorgan Chase", run: async () => {
 
 export const BIG: Reader[] = [
   AMAZON,
-  eightfold("Microsoft", "apply.careers.microsoft.com", "microsoft.com", "https://apply.careers.microsoft.com/careers/job", QUERIES, 15),
+  eightfold("Microsoft", "apply.careers.microsoft.com", "microsoft.com", "https://apply.careers.microsoft.com/careers/job", QUERIES, 30),
   eightfold("PayPal", "paypal.eightfold.ai", "paypal.com", "https://paypal.eightfold.ai/careers/job", [""], 40),
   JPM,
   SERVICENOW,
