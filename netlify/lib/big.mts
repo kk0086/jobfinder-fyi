@@ -182,14 +182,14 @@ export const BIG: Reader[] = [
   GOOGLE,
   radancy("Intuit", "https://jobs.intuit.com", "", "27595"),
   radancy("Palo Alto Networks", "https://jobs.paloaltonetworks.com", "/en", "47263"),
+  UBER,
 ];
 
 export async function crawlBig(i: number) {
   const r = BIG[i];
   try {
     const { raw, assumeUS } = await r.run();
-    const seen = new Set<string>(); const jobs: Job[] = [  UBER,
-];
+    const seen = new Set<string>(); const jobs: Job[] = [];
     for (const x of raw) { if (!x.title || !x.url || seen.has(x.url)) continue; seen.add(x.url); const n = normalizeJob(x, { assumeUS }); if (n) jobs.push(n); }
     return { jobs, report: [{ name: r.name, ok: true, total: raw.length, kept: jobs.length }], names: [r.name] };
   } catch (e: any) {
