@@ -169,6 +169,24 @@ const UBER: Reader = { name: "Uber", run: async () => {
   return { raw, assumeUS: true };
 } };
 
+// Etsy careers (Clinch-hosted): server-rendered search pages, 30 roles per page. Needs a browser-like User-Agent.
+const ETSY: Reader = { name: "Etsy", run: async () => {
+  const dec = (t: string) => t.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;|&#x27;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
+  const page = async (p: number): Promise<RawJob[]> => {
+    const r = await fetch(`https://careers.etsy.com/jobs/search?page=${p}`, { signal: AbortSignal.timeout(14000), headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html,application/xhtml+xml", "accept-language": "en-US,en;q=0.9" } });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const h = await r.text();
+    return h.split("job-search-results-card-body").slice(1).map(c => {
+      const a = /<a [^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/.exec(c); const l = /job-component-location[\s\S]*?<span[^>]*>([\s\S]*?)<\/span>/.exec(c);
+      return a ? { company: "Etsy", title: dec(a[2]), location: l ? dec(l[1]) : "", department: "", url: a[1], posted: null } : null;
+    }).filter(Boolean) as RawJob[];
+  };
+  const out: RawJob[] = [];
+  for (let p = 1; p <= 12; p++) { const rows = await page(p); if (!rows.length) break; out.push(...rows); }
+  if (!out.length) throw new Error("no results");
+  return { raw: out };
+} };
+
 export const BIG: Reader[] = [
   AMAZON,
   eightfold("Microsoft", "apply.careers.microsoft.com", "microsoft.com", "https://apply.careers.microsoft.com/careers/job", QUERIES, 30),
@@ -183,6 +201,7 @@ export const BIG: Reader[] = [
   radancy("Intuit", "https://jobs.intuit.com", "", "27595"),
   radancy("Palo Alto Networks", "https://jobs.paloaltonetworks.com", "/en", "47263"),
   UBER,
+  ETSY,
 ];
 
 export async function crawlBig(i: number) {
