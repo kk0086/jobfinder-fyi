@@ -337,7 +337,7 @@ const NIKE: Reader = { name: "Nike", run: async () => {
   };
   const first = await get(1);
   if (!first.rows.length) throw new Error("no results");
-  const pages = Math.min(Math.ceil((first.total || 10) / 10), 160);
+  const pages = first.total ? Math.min(Math.ceil(first.total / 10), 200) : 160;
   const deadline = Date.now() + 22000;
   const rest = await pool(range(2, pages + 1, 1), 10, async p => (Date.now() > deadline ? [] : (await get(p)).rows));
   const seen = new Map<string, RawJob>();
