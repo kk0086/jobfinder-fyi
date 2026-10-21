@@ -1,5 +1,8 @@
 import { getStore } from "@netlify/blobs";
-import { crawlChunk, FEEDS, CHUNKS, chunkOf } from "./crawl.mts";
+import { crawlChunk, FEEDS, FEED_CHUNKS, chunkOf } from "./crawl.mts";
+import { crawlBig, BIG } from "./big.mts";
+
+export const TOTAL_BATCHES = FEED_CHUNKS + BIG.length;
 import type { Job } from "./normalize.mts";
 import seed from "./seed.json" with { type: "json" };
 
@@ -8,7 +11,7 @@ type ChunkBlob = { at: string; jobs: Job[]; report: { name: string; ok: boolean;
 export async function runChunk(chunk: number) {
   const store = getStore("feed");
   const prev = (await store.get(`chunk-${chunk}`, { type: "json" }).catch(() => null)) as ChunkBlob | null;
-  const { jobs, report } = await crawlChunk(chunk);
+  const { jobs, report } = chunk < FEED_CHUNKS ? await crawlChunk(chunk) : await crawlBig(chunk - FEED_CHUNKS);
   const failed = new Set(report.filter(r => !r.ok).map(r => r.name));
   // A company that failed this run keeps its previous roles instead of vanishing.
   const kept = prev ? prev.jobs.filter(j => failed.has(j.company)) : [];
@@ -21,7 +24,7 @@ let cache: { t: number; body: Uint8Array } | null = null;
 
 export async function loadAll() {
   const store = getStore("feed");
-  const blobs = await Promise.all(Array.from({ length: CHUNKS }, (_, i) => store.get(`chunk-${i}`, { type: "json" }).catch(() => null) as Promise<ChunkBlob | null>));
+  const blobs = await Promise.all(Array.from({ length: TOTAL_BATCHES }, (_, i) => store.get(`chunk-${i}`, { type: "json" }).catch(() => null) as Promise<ChunkBlob | null>));
   const fresh = new Set<string>();
   const jobs: Job[] = [];
   let at = "";
@@ -31,7 +34,7 @@ export async function loadAll() {
     for (const r of b.report) fresh.add(r.name);
     jobs.push(...b.jobs);
   }
-  const feedNames = new Set(FEEDS.map(f => f.name));
+  const feedNames = new Set([...FEEDS.map(f => f.name), ...BIG.map(b => b.name)]);
   // Seed rows: browser-read companies always; feed companies only until their first live refresh.
   for (const j of (seed as any).jobs as Job[]) if (!feedNames.has(j.company) || !fresh.has(j.company)) jobs.push(j);
   return { jobs, at, blobs };
@@ -46,4 +49,3 @@ export async function jobsPayload(force = false) {
   cache = { t: Date.now(), body };
   return body;
 }
-export const chunkFor = (name: string) => { const i = FEEDS.findIndex(f => f.name === name); return i < 0 ? -1 : chunkOf(i); };

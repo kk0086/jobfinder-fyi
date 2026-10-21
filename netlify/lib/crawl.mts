@@ -3,8 +3,9 @@ import feeds from "./feeds.json" with { type: "json" };
 
 export type Feed = { name: string; ats: "greenhouse" | "ashby" | "lever"; slug: string };
 export const FEEDS = feeds as Feed[];
-export const CHUNKS = 6;
-export const chunkOf = (i: number) => i % CHUNKS;
+export const FEED_CHUNKS = 6;
+export const CHUNKS = FEED_CHUNKS; // feed batches; browser-less big-company batches follow (see store.mts)
+export const chunkOf = (i: number) => i % FEED_CHUNKS;
 
 async function getJson(url: string, ms = 12000): Promise<any> {
   const ctl = new AbortController();

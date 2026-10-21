@@ -1,6 +1,6 @@
 import type { Config } from "@netlify/functions";
 import { runChunk } from "../lib/store.mts";
-import { CHUNKS } from "../lib/crawl.mts";
+import { FEED_CHUNKS as CHUNKS } from "../lib/crawl.mts";
 
 // Fires six times in a row each morning (13:00-13:20 UTC); each run reads one sixth of the company job boards.
 export default async () => {

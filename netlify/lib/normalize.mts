@@ -140,12 +140,12 @@ const iso = (s?: string | number | null) => {
   return isNaN(d.getTime()) ? null : d.toISOString();
 };
 
-export function normalizeJob(j: RawJob) {
+export function normalizeJob(j: RawJob, opts: { assumeUS?: boolean } = {}) {
   const loc = (j.location || "").trim();
   const dept = (j.department || "").trim();
   const family = roleFamily(j.title, dept);
   if (!family) return null;
-  if (!isUS(loc)) return null;
+  if (!opts.assumeUS && !isUS(loc)) return null;
   const remote = j.remote != null ? !!j.remote : /\bremote\b/i.test(loc + " " + j.title);
   let states = findStates(loc);
   if (!states.length) states = remote ? ["Remote (US)"] : ["Unspecified"];

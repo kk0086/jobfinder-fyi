@@ -2,7 +2,7 @@ import { getStore } from "@netlify/blobs";
 import type { Config } from "@netlify/functions";
 import { isOwner } from "../lib/auth.mts";
 import { getStore as gs } from "@netlify/blobs";
-import { CHUNKS } from "../lib/crawl.mts";
+import { TOTAL_BATCHES as CHUNKS } from "../lib/store.mts";
 import coverage from "./coverage.json" with { type: "json" };
 
 
