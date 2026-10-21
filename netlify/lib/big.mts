@@ -316,6 +316,34 @@ const ATLASSIAN: Reader = { name: "Atlassian", run: async () => {
   return { raw, assumeUS: true };
 } };
 
+// Nike careers: server-rendered result pages (10 per page) that embed each role's data as escaped JSON.
+const NIKE: Reader = { name: "Nike", run: async () => {
+  const BROWSER = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "accept-language": "en-US,en;q=0.9", "sec-fetch-dest": "document", "sec-fetch-mode": "navigate", "sec-fetch-site": "none" };
+  const get = async (p: number): Promise<{ rows: RawJob[]; total: number }> => {
+    const r = await fetch(`https://careers.nike.com/jobs/page/${p}`, { headers: BROWSER, signal: AbortSignal.timeout(14000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const h = await r.text();
+    const total = Number(/of (\d[\d,]*) jobs/i.exec(h)?.[1]?.replace(/,/g, "") || 0);
+    const rows = h.split('\\"requisitionID\\":\\"').slice(1).map(c => {
+      const id = /^([^\\]+)\\"/.exec(c)?.[1]; const t = /\\"title\\":\\"((?:(?!\\\\").)*)\\"/.exec(c)?.[1];
+      const cs = /\\"cityState\\":\\"((?:(?!\\").)*)\\"/.exec(c)?.[1] || ""; const country = /\\"countryAbbr\\":\\"([A-Z]{2})\\"/.exec(c)?.[1] || "";
+      if (!id || !t) return null;
+      const title = t.replace(/\\\\u0026/g, "&").replace(/\\\\\//g, "/");
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      return { company: "Nike", title, location: country === "US" ? cs : cs ? `${cs}, ${country}` : "", department: "", url: `https://careers.nike.com/${slug}/job/${id}`, posted: null } as RawJob;
+    }).filter(Boolean) as RawJob[];
+    return { rows, total };
+  };
+  const first = await get(1);
+  if (!first.rows.length) throw new Error("no results");
+  const pages = Math.min(Math.ceil((first.total || 10) / 10), 160);
+  const deadline = Date.now() + 22000;
+  const rest = await pool(range(2, pages + 1, 1), 10, async p => (Date.now() > deadline ? [] : (await get(p)).rows));
+  const seen = new Map<string, RawJob>();
+  for (const r of [...first.rows, ...rest.flat()]) if (r) seen.set(r.url, r);
+  return { raw: [...seen.values()] };
+} };
+
 export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
@@ -351,6 +379,7 @@ export const BIG: Reader[] = [
   sitemapJobs("Activision Blizzard", "https://careers.activision.com/sitemap.xml", /careers\.activision\.com\/job\//),
   ...(extra as Spec[]).map(fromSpec),
   ATLASSIAN,
+  NIKE,
 ];
 
 export async function crawlBig(i: number) {

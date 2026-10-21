@@ -204,11 +204,5 @@
 "host": "homedepot.wd5.myworkdayjobs.com",
 "tenant": "homedepot",
 "site": "CareerDepot"
-},
-{
-"kind": "sitemap",
-"name": "Shopify",
-"sitemap": "https://www.shopify.com/careers/sitemap.xml",
-"pattern": "/careers/[a-z0-9-]+_[0-9a-f-]{36}$"
 }
 ]
