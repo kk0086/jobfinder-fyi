@@ -1,6 +1,7 @@
 import { getStore } from "@netlify/blobs";
 import type { Config } from "@netlify/functions";
 import { createHash, timingSafeEqual } from "node:crypto";
+import coverage from "./coverage.json" with { type: "json" };
 
 // SHA-256 of the owner's admin key (the key itself is never stored in the repo).
 const KEY_HASH = "e4c18a31f0ecf58d21e1b0e4934d439540bb2fb59e50e1bd82e8c5a1f73b3743";
@@ -70,6 +71,7 @@ export default async (req: Request) => {
       when: s.last, country: s.country, device: s.device, ref: s.ref, active: s.active, views: s.views, clicks: (s.clicks || []).length, returning: s.returning,
     })),
     truncated: sessions.length >= 20000,
+    coverage,
   };
   return new Response(JSON.stringify(body), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
 };
