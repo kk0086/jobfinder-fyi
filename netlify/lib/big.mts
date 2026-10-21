@@ -155,21 +155,19 @@ const GOOGLE: Reader = { name: "Google", run: async () => {
   return { raw: [...seen.values()], assumeUS: true };
 } };
 
-// Apple jobs: the search page embeds its results as a JSON string (window.__staticRouterHydrationData), 20 roles per page.
+// Apple jobs: the careers site's own search API, 20 roles per page, newest first.
 const APPLE: Reader = { name: "Apple", run: async () => {
   const get = async (p: number) => {
-    const r = await fetch(`https://jobs.apple.com/en-us/search?location=united-states-USA&sort=newest&page=${p}`, { headers: { "user-agent": UA["user-agent"], "accept-language": "en-US" }, signal: AbortSignal.timeout(14000) });
+    const r = await fetch("https://jobs.apple.com/api/v1/search", { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "user-agent": UA["user-agent"], referer: "https://jobs.apple.com/en-us/search", origin: "https://jobs.apple.com" },
+      body: JSON.stringify({ query: "", filters: { locations: ["postLocation-USA"] }, page: p, locale: "en-us", sort: "newest", format: { longDate: "MMMM D, YYYY", mediumDate: "MMM D, YYYY" } }), signal: AbortSignal.timeout(14000) });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const h = await r.text();
-    const a = h.indexOf('JSON.parse("', h.indexOf("__staticRouterHydrationData")); if (a < 0) throw new Error("no data");
-    const b = h.indexOf('");', a + 12);
-    const data = JSON.parse(JSON.parse('"' + h.slice(a + 12, b) + '"'));
-    const sr = data?.loaderData?.search;
-    return { rows: (sr?.searchResults || []) as any[], total: Number(sr?.totalRecords || 0) };
+    const j = await r.json();
+    return { rows: (j?.res?.searchResults || []) as any[], total: Number(j?.res?.totalRecords || 0) };
   };
   const first = await get(1);
-  const pages = Math.min(Math.ceil(first.total / 20), 120);
-  const rest = await pool(range(2, pages + 1, 1), 8, async p => (await get(p)).rows);
+  const pages = Math.min(Math.ceil(first.total / 20), 400);
+  const deadline = Date.now() + 22000;
+  const rest = await pool(range(2, pages + 1, 1), 12, async p => (Date.now() > deadline ? [] : (await get(p)).rows));
   const raw: RawJob[] = [first.rows, ...rest].flatMap(x => x || []).map((e: any) => ({
     company: "Apple", title: e.postingTitle, department: e.team?.teamName || "",
     location: (e.locations || []).filter((l: any) => /united states/i.test(l.countryName || "")).map((l: any) => [l.city, l.stateProvince].filter(Boolean).join(", ")).join("; "),
