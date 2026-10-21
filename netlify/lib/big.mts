@@ -125,6 +125,36 @@ function radancy(name: string, origin: string, prefix: string, org: string): Rea
   } };
 }
 
+// Google careers: the results page embeds its data as a script literal (AF_initDataCallback ds:1), 20 roles per page.
+const GOOGLE: Reader = { name: "Google", run: async () => {
+  const base = "https://www.google.com/about/careers/applications/jobs/results/";
+  const get = async (q: string, page: number) => {
+    const r = await fetch(`${base}?q=${encodeURIComponent(q)}&location=United%20States&page=${page}`, { headers: { "user-agent": UA["user-agent"], "accept-language": "en-US" }, signal: AbortSignal.timeout(14000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const h = await r.text();
+    const a = h.indexOf("AF_initDataCallback({key: 'ds:1'"); if (a < 0) return { rows: [] as any[], total: 0 };
+    const d = h.indexOf("data:", a) + 5, e = h.indexOf(", sideChannel", d);
+    const data = JSON.parse(h.slice(d, e));
+    return { rows: (data?.[0] || []) as any[], total: Number(data?.[2] || 0) };
+  };
+  const seen = new Map<string, RawJob>();
+  const add = (rows: any[]) => { for (const e of rows) {
+    const id = e?.[0], title = e?.[1]; if (!id || !title) continue;
+    const locs = (e as any[]).find(x => Array.isArray(x) && x.length && Array.isArray(x[0]) && typeof x[0][0] === "string" && x[0].length >= 6 && x[0][x[0].length - 1].length === 2);
+    const us = (locs || []).filter((l: any[]) => l[l.length - 1] === "US");
+    if (!us.length) continue;
+    const slug = String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    seen.set(id, { company: "Google", title, location: us.map((l: any[]) => l[0]).join("; "), department: "", url: `${base}${id}-${slug}`, posted: null });
+  } };
+  const deadline = Date.now() + 22000;
+  await pool(QUERIES, 4, async q => {
+    const first = await get(q, 1); add(first.rows);
+    const pages = Math.min(Math.ceil((first.total || 0) / 20), 20);
+    await pool(range(2, pages + 1, 1), 3, async p => { if (Date.now() > deadline) return; add((await get(q, p)).rows); });
+  });
+  return { raw: [...seen.values()], assumeUS: true };
+} };
+
 export const BIG: Reader[] = [
   AMAZON,
   eightfold("Microsoft", "apply.careers.microsoft.com", "microsoft.com", "https://apply.careers.microsoft.com/careers/job", QUERIES, 30),
@@ -135,6 +165,7 @@ export const BIG: Reader[] = [
   workday("Salesforce", "salesforce.wd12.myworkdayjobs.com", "salesforce", "External_Career_Site"),
   workday("Adobe", "adobe.wd5.myworkdayjobs.com", "adobe", "external_experienced"),
   workday("Mastercard", "mastercard.wd1.myworkdayjobs.com", "mastercard", "CorporateCareers"),
+  GOOGLE,
   radancy("Intuit", "https://jobs.intuit.com", "", "27595"),
   radancy("Palo Alto Networks", "https://jobs.paloaltonetworks.com", "/en", "47263"),
 ];
