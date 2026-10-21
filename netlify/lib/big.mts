@@ -155,6 +155,29 @@ const GOOGLE: Reader = { name: "Google", run: async () => {
   return { raw: [...seen.values()], assumeUS: true };
 } };
 
+// Apple jobs: the search page embeds its results as a JSON string (window.__staticRouterHydrationData), 20 roles per page.
+const APPLE: Reader = { name: "Apple", run: async () => {
+  const get = async (p: number) => {
+    const r = await fetch(`https://jobs.apple.com/en-us/search?location=united-states-USA&sort=newest&page=${p}`, { headers: { "user-agent": UA["user-agent"], "accept-language": "en-US" }, signal: AbortSignal.timeout(14000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const h = await r.text();
+    const a = h.indexOf('JSON.parse("', h.indexOf("__staticRouterHydrationData")); if (a < 0) throw new Error("no data");
+    const b = h.indexOf('");', a + 12);
+    const data = JSON.parse(JSON.parse('"' + h.slice(a + 12, b) + '"'));
+    const sr = data?.loaderData?.search;
+    return { rows: (sr?.searchResults || []) as any[], total: Number(sr?.totalRecords || 0) };
+  };
+  const first = await get(1);
+  const pages = Math.min(Math.ceil(first.total / 20), 120);
+  const rest = await pool(range(2, pages + 1, 1), 8, async p => (await get(p)).rows);
+  const raw: RawJob[] = [first.rows, ...rest].flatMap(x => x || []).map((e: any) => ({
+    company: "Apple", title: e.postingTitle, department: e.team?.teamName || "",
+    location: (e.locations || []).filter((l: any) => /united states/i.test(l.countryName || "")).map((l: any) => [l.city, l.stateProvince].filter(Boolean).join(", ")).join("; "),
+    url: `https://jobs.apple.com/en-us/details/${e.positionId}/${e.transformedPostingTitle || ""}`, posted: e.postingDate ? new Date(e.postingDate).toISOString().slice(0, 10) : null,
+  }));
+  return { raw: raw.filter(r => r.location), assumeUS: true };
+} };
+
 export const BIG: Reader[] = [
   AMAZON,
   eightfold("Microsoft", "apply.careers.microsoft.com", "microsoft.com", "https://apply.careers.microsoft.com/careers/job", QUERIES, 30),
@@ -166,6 +189,7 @@ export const BIG: Reader[] = [
   workday("Adobe", "adobe.wd5.myworkdayjobs.com", "adobe", "external_experienced"),
   workday("Mastercard", "mastercard.wd1.myworkdayjobs.com", "mastercard", "CorporateCareers"),
   GOOGLE,
+  APPLE,
   radancy("Intuit", "https://jobs.intuit.com", "", "27595"),
   radancy("Palo Alto Networks", "https://jobs.paloaltonetworks.com", "/en", "47263"),
 ];
