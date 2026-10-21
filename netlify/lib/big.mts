@@ -155,23 +155,16 @@ const GOOGLE: Reader = { name: "Google", run: async () => {
   return { raw: [...seen.values()], assumeUS: true };
 } };
 
-// Uber careers: the site's own search API (page-based). Returns every US role; the normalizer assigns role families.
+// Uber careers (jobs.uber.com): the site's own search API, 10 roles per page, US only. Every role family is kept.
 const UBER: Reader = { name: "Uber", run: async () => {
-  const get = async (page: number) => {
-    const r = await fetch("https://www.uber.com/api/loadSearchJobsResults?localeCode=en", { method: "POST", signal: AbortSignal.timeout(14000),
-      headers: { "content-type": "application/json", accept: "application/json", "x-csrf-token": "x", "user-agent": UA["user-agent"], origin: "https://www.uber.com", referer: "https://www.uber.com/us/en/careers/list/" },
-      body: JSON.stringify({ params: { location: [{ country: "USA" }], department: [], team: [], programAndPlatform: [], lineOfBusinessName: [] }, page, limit: 100 }) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const j = await r.json(); const d = j?.data || {};
-    return { rows: (d.results || []) as any[], total: Number(d.totalResults?.low ?? d.totalResults ?? 0) };
-  };
-  const first = await get(0);
-  if (!first.rows.length) throw new Error("no results");
-  const rest = await pool(range(1, Math.min(Math.ceil(first.total / 100), 30), 1), 5, async p => (await get(p)).rows);
-  const raw: RawJob[] = [first.rows, ...rest].flatMap(x => x || []).map((e: any) => ({
-    company: "Uber", title: e.title, department: e.department || e.team || "",
-    location: [e.location?.city, e.location?.region].filter(Boolean).join(", ") || "United States",
-    url: `https://www.uber.com/global/en/careers/list/${e.id}/`, posted: e.creationDate ? String(e.creationDate).slice(0, 10) : null,
+  const get = (page: number) => jget(`https://jobs.uber.com/api/jobs/search/?search=&countries=United+States&page=${page}`);
+  const first = await get(1);
+  if (!first?.jobs?.length) throw new Error("no results");
+  const rest = await pool(range(2, Math.min(first.totalPages || 1, 80) + 1, 1), 8, async p => (await get(p))?.jobs || []);
+  const raw: RawJob[] = [first.jobs, ...rest].flatMap(x => x || []).map((e: any) => ({
+    company: "Uber", title: e.Title, department: (e.Teams || [])[0] || e.AdditionalText || "",
+    location: (e.Locations || []).filter((l: any) => !l.Country || /united states/i.test(l.Country)).map((l: any) => String(l.Address || [l.City, l.Region].filter(Boolean).join(", ")).replace(/,?\s*(USA|United States)$/i, "")).filter(Boolean).join("; ") || "United States",
+    url: `https://jobs.uber.com/en/jobs/${e.Id}/`, posted: e.DisplayDate ? String(e.DisplayDate).slice(0, 10) : null,
   }));
   return { raw, assumeUS: true };
 } };
