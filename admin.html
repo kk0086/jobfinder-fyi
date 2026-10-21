@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Job Finder · Traffic</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#14181f;--muted:#667085;--line:#e4e7ec;--acc:#2f5fd0;--bar:#9db6ee}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#171a21;--ink:#e8eaee;--muted:#98a1b3;--line:#262b36;--acc:#7aa2ff;--bar:#2a3b66}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+.w{max-width:1000px;margin:0 auto;padding:20px 16px 60px}h1{font-size:20px;margin:0 0 4px}.sub{color:var(--muted);margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.tile b{display:block;font-size:24px;font-variant-numeric:tabular-nums}.tile span{color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px}
+h2{font-size:13px;margin:0 0 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px solid var(--line)}.row:first-of-type{border:0}.row span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chart{display:flex;align-items:flex-end;gap:2px;height:120px}.chart i{flex:1;background:var(--bar);border-radius:2px 2px 0 0;min-height:2px;position:relative}.chart i:hover{background:var(--acc)}
+select,input,button{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}button{cursor:pointer}
+#login{max-width:340px;margin:12vh auto}#login form{display:flex;gap:8px}#login input{flex:1}
+table{width:100%;border-collapse:collapse}td,th{padding:5px 6px;text-align:left;border-top:1px solid var(--line);font-size:13px}th{color:var(--muted);font-weight:600}
+.err{color:#d92d20;margin-top:8px}.live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#12b76a;margin-right:6px}
+</style></head><body><div class="w">
+<div id="login" class="card"><h1>Traffic</h1><div class="sub">Owner access only.</div>
+<form id="f"><input id="k" type="password" placeholder="Admin key" autocomplete="current-password" required><button>View</button></form><div class="err" id="e"></div></div>
+<div id="app" hidden>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h1>Job Finder traffic</h1><div class="sub" id="sub"></div></div>
+<div><select id="days"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select> <button id="rf">Refresh</button> <button id="out">Sign out</button></div></div>
+<div class="tiles" id="tiles"></div>
+<div class="card"><h2>Visitors per day</h2><div class="chart" id="chart"></div><div class="sub" id="axis" style="display:flex;justify-content:space-between;margin:4px 0 0"></div></div>
+<div class="grid" id="grid"></div>
+<div class="card" style="margin-top:12px"><h2>Recent visits</h2><div style="overflow:auto"><table id="recent"></table></div></div>
+</div></div>
+<script>
+const $=id=>document.getElementById(id);let KEY="";try{KEY=sessionStorage.getItem("jfk")||""}catch{}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const dur=s=>s>=3600?(s/3600).toFixed(1)+"h":s>=60?Math.floor(s/60)+"m "+(s%60)+"s":s+"s";
+const ago=t=>{const m=(Date.now()-t)/6e4;return m<1?"just now":m<60?Math.round(m)+"m ago":m<1440?Math.round(m/60)+"h ago":Math.round(m/1440)+"d ago"};
+async function load(){
+  const r=await fetch("/api/stats?days="+$("days").value,{headers:{"x-admin-key":KEY},cache:"no-store"});
+  if(r.status===401){try{sessionStorage.removeItem("jfk")}catch{};$("app").hidden=true;$("login").hidden=false;$("e").textContent=KEY?"Wrong key.":"";KEY="";return}
+  if(!r.ok){$("e").textContent="Error "+r.status;return}
+  const d=await r.json();try{sessionStorage.setItem("jfk",KEY);localStorage.setItem("jf_owner","1")}catch{}
+  $("login").hidden=true;$("app").hidden=false;const t=d.totals;
+  $("sub").innerHTML=`<span class="live"></span>${t.liveNow} active now · updated ${new Date(d.generated).toLocaleTimeString()}`+(d.truncated?" · capped at 20,000 sessions":"");
+  const tile=(v,l)=>`<div class="card tile"><b>${v}</b><span>${l}</span></div>`;
+  $("tiles").innerHTML=tile(t.visitors.toLocaleString(),"Unique visitors")+tile(t.sessions.toLocaleString(),"Visits")+tile(t.pageviews.toLocaleString(),"Page views")+tile(dur(t.avgActiveSec),"Avg time on site")+tile(dur(t.medianActiveSec),"Median time on site")+tile(t.totalActiveHours+"h","Total time spent")+tile(t.returningVisitors.toLocaleString(),"Returning visitors")+tile(t.engagedPct+"%","Engaged (10s+)")+tile(t.bouncePct+"%","Bounce")+tile(t.jobClicks.toLocaleString(),"Job link clicks");
+  const mx=Math.max(1,...d.daily.map(x=>x.visitors));
+  $("chart").innerHTML=d.daily.map(x=>`<i style="height:${x.visitors/mx*100}%" title="${x.d}: ${x.visitors} visitors, ${x.sessions} visits"></i>`).join("");
+  $("axis").innerHTML=`<span>${d.daily[0].d}</span><span>${d.daily[d.daily.length-1].d}</span>`;
+  const list=(h,a)=>`<div class="card"><h2>${h}</h2>${a.length?a.map(([k,n])=>`<div class="row"><span title="${esc(k)}">${esc(k)}</span><span>${n}</span></div>`).join(""):'<div class="sub">No data yet</div>'}</div>`;
+  $("grid").innerHTML=list("Countries",d.countries)+list("Devices",d.devices)+list("Referrers",d.referrers)+list("Most clicked companies",d.topCompanies)+list("Most clicked jobs",d.topJobs);
+  $("recent").innerHTML="<tr><th>When</th><th>Where</th><th>Device</th><th>Source</th><th>Time</th><th>Views</th><th>Clicks</th><th></th></tr>"+d.recent.map(s=>`<tr><td>${ago(s.when)}</td><td>${esc(s.country||"—")}</td><td>${s.device}</td><td>${esc(s.ref||"Direct")}</td><td>${dur(s.active)}</td><td>${s.views}</td><td>${s.clicks}</td><td>${s.returning?"returning":"new"}</td></tr>`).join("");
+}
+$("f").onsubmit=e=>{e.preventDefault();KEY=$("k").value;$("e").textContent="";load()};
+$("days").onchange=load;$("rf").onclick=load;$("out").onclick=()=>{try{sessionStorage.removeItem("jfk")}catch{};location.reload()};
+if(KEY)load();
+</script></body></html>
