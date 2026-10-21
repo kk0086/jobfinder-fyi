@@ -25,16 +25,16 @@ let cache: { t: number; body: Uint8Array } | null = null;
 export async function loadAll() {
   const store = getStore("feed");
   const blobs = await Promise.all(Array.from({ length: TOTAL_BATCHES }, (_, i) => store.get(`chunk-${i}`, { type: "json" }).catch(() => null) as Promise<ChunkBlob | null>));
+  const feedNames = new Set([...FEEDS.map(f => f.name), ...BIG.map(b => b.name)]);
   const fresh = new Set<string>();
   const jobs: Job[] = [];
   let at = "";
   for (const b of blobs) {
     if (!b) continue;
     at = at > b.at ? at : b.at;
-    for (const r of b.report) fresh.add(r.name);
-    jobs.push(...b.jobs);
+    for (const r of b.report) if (feedNames.has(r.name)) fresh.add(r.name);
+    jobs.push(...b.jobs.filter(j => feedNames.has(j.company) || !b.report.length));
   }
-  const feedNames = new Set([...FEEDS.map(f => f.name), ...BIG.map(b => b.name)]);
   // Seed rows: browser-read companies always; feed companies only until their first live refresh.
   for (const j of (seed as any).jobs as Job[]) if (!feedNames.has(j.company) || !fresh.has(j.company)) jobs.push(j);
   return { jobs, at, blobs };
