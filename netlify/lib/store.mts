@@ -37,7 +37,9 @@ export async function loadAll() {
   }
   // Seed rows: browser-read companies always; feed companies only until their first live refresh.
   for (const j of (seed as any).jobs as Job[]) if (!feedNames.has(j.company) || !fresh.has(j.company)) jobs.push(j);
-  return { jobs, at, blobs };
+  const seenUrl = new Set<string>();
+  const unique = jobs.filter(j => { const k = j.company + "|" + j.url; if (seenUrl.has(k)) return false; seenUrl.add(k); return true; });
+  return { jobs: unique, at, blobs };
 }
 
 export async function jobsPayload(force = false) {

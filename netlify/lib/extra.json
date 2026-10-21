@@ -204,5 +204,10 @@
 "host": "homedepot.wd5.myworkdayjobs.com",
 "tenant": "homedepot",
 "site": "CareerDepot"
+},
+{
+"kind": "jibe",
+"name": "Booking Holdings",
+"origin": "https://jobs.booking.com"
 }
 ]
