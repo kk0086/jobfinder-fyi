@@ -282,7 +282,29 @@ function jibe(name: string, origin: string): Reader {
   } };
 }
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe"; name: string; [k: string]: any };
+// Phenom People career sites (eBay, Chewy, Cisco, Lowe's, UPS, ...): /widgets search API, 100 per page.
+function phenom(name: string, origin: string, locale = "us/en", cap = 2000): Reader {
+  const [cc, lang] = locale.split("/");
+  const post = (from: number) => jget(`${origin}/widgets`, { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify({
+    lang: `${lang}_${cc}`, deviceType: "desktop", country: cc, pageName: "search-results", ddoKey: "refineSearch", sortBy: "Most recent", subsearch: "", from, jobs: true, counts: true,
+    all_fields: ["category", "country", "state", "city", "type"], size: 100, clearAll: false, jdsource: "facets", isSliderEnable: false, pageId: "page11", siteType: "external", keywords: "", global: true, selected_fields: {}, sort: { order: "desc", field: "postedDate" }, locationData: {},
+  }) });
+  return { name, run: async () => {
+    const first = await post(0);
+    const d0 = first?.refineSearch;
+    const total = Math.min(Number(d0?.totalHits || 0), cap);
+    if (!d0?.data?.jobs) throw new Error("no data");
+    const rest = await pool(range(100, total, 100), 6, post);
+    const raw: RawJob[] = [first, ...rest].flatMap(p => p?.refineSearch?.data?.jobs || []).map((j: any) => ({
+      company: name, title: j.title, department: j.category || "", country: j.country,
+      location: j.location || [j.city, j.state].filter(Boolean).join(", "),
+      url: `${origin}/${locale}/job/${j.jobId || j.jobSeqNo}`, posted: j.postedDate || null,
+    })).filter((r: any) => !r.country || /^(US|USA|United States)/i.test(r.country));
+    return { raw };
+  } };
+}
+
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -290,6 +312,7 @@ export function fromSpec(s: Spec): Reader {
     case "radancy": return radancy(s.name, s.origin, s.prefix || "", String(s.org));
     case "eightfold": return eightfold(s.name, s.host, s.domain, s.careersBase, s.queries || QUERIES, s.pagesPer || 30);
     case "jibe": return jibe(s.name, s.origin);
+    case "phenom": return phenom(s.name, s.origin, s.locale || "us/en");
   }
   throw new Error("unknown kind");
 }
