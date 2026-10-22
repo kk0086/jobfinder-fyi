@@ -209,5 +209,80 @@
 "kind": "jibe",
 "name": "Booking Holdings",
 "origin": "https://jobs.booking.com"
+},
+{
+"kind": "workday",
+"name": "SailPoint",
+"host": "sailpoint.wd1.myworkdayjobs.com",
+"tenant": "sailpoint",
+"site": "SailPoint"
+},
+{
+"kind": "workday",
+"name": "Medtronic",
+"host": "medtronic.wd1.myworkdayjobs.com",
+"tenant": "medtronic",
+"site": "MedtronicCareers"
+},
+{
+"kind": "workday",
+"name": "GE HealthCare",
+"host": "gehc.wd5.myworkdayjobs.com",
+"tenant": "gehc",
+"site": "GEHC_ExternalSite"
+},
+{
+"kind": "radancy",
+"name": "Synopsys",
+"origin": "https://careers.synopsys.com",
+"prefix": "",
+"org": "44408"
+},
+{
+"kind": "radancy",
+"name": "NetApp",
+"origin": "https://careers.netapp.com",
+"prefix": "",
+"org": "27600"
+},
+{
+"kind": "radancy",
+"name": "Chipotle",
+"origin": "https://jobs.chipotle.com",
+"prefix": "",
+"org": "282"
+},
+{
+"kind": "phenom",
+"name": "Fiserv",
+"origin": "https://careers.fiserv.com",
+"locale": "us/en"
+},
+{
+"kind": "smartrecruiters",
+"name": "Western Digital",
+"id": "westerndigital"
+},
+{
+"kind": "smartrecruiters",
+"name": "Intuitive Surgical",
+"id": "Intuitive"
+},
+{
+"kind": "oracle",
+"name": "Yum! Brands",
+"host": "eczd.fa.us2.oraclecloud.com",
+"site": "CX_1"
+},
+{
+"kind": "oracle",
+"name": "Williams-Sonoma",
+"host": "ehac.fa.us6.oraclecloud.com",
+"site": "CX_1"
+},
+{
+"kind": "jibe",
+"name": "Garmin",
+"origin": "https://careers.garmin.com"
 }
 ]

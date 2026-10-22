@@ -109,11 +109,11 @@ function radancy(name: string, origin: string, prefix: string, org: string): Rea
   const url = (p: number) => `${origin}${prefix}/search-jobs/results?ActiveFacetID=0&CurrentPage=${p}&RecordsPerPage=100&Distance=50&RadiusUnitType=0&Keywords=&Location=&ShowRadius=False&IsPagination=False&CustomFacetName=&FacetTerm=&FacetType=0&SearchResultsModuleName=Search+Results&SortCriteria=0&SortDirection=0&SearchType=5&OrganizationIds=${org}&PostalCode=&ResultsType=0&fc=&fl=&fcf=&afc=&afl=&afcf=`;
   const dec = (t: string) => t.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;|&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
   const parse = (html: string): RawJob[] => {
-    const out: RawJob[] = []; const re = /<a href="([^"]*\/job\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g; let m: RegExpExecArray | null;
+    const out: RawJob[] = []; const re = /<a\s[^>]*?href="([^"]*\/job\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g; let m: RegExpExecArray | null;
     while ((m = re.exec(html))) {
-      const t = /<h2[^>]*>([\s\S]*?)<\/h2>/.exec(m[2]); const l = /class="job-location"[^>]*>([\s\S]*?)<\/span>/.exec(m[2]); const d = /job-date-posted"[^>]*>([\s\S]*?)<\/span>/.exec(m[2]);
+      const t = /<h[23][^>]*>([\s\S]*?)<\/h[23]>/.exec(m[2]); const l = /class="job-location[^"]*"[^>]*>([\s\S]*?)<\/span>/.exec(m[2]); const d = /job-date-posted"[^>]*>([\s\S]*?)<\/span>/.exec(m[2]);
       const dm = d && /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(d[1]);
-      out.push({ company: name, title: t ? dec(t[1]) : "", location: l ? dec(l[1]) : "", department: "", url: origin + m[1], posted: dm ? `${dm[3]}-${dm[1].padStart(2, "0")}-${dm[2].padStart(2, "0")}` : null });
+      if (t && dec(t[1])) out.push({ company: name, title: dec(t[1]), location: l ? dec(l[1]) : "", department: "", url: origin + m[1], posted: dm ? `${dm[3]}-${dm[1].padStart(2, "0")}-${dm[2].padStart(2, "0")}` : null });
     }
     if (!out.length) for (const c of html.split('class="sr-job-item"').slice(1)) { // alternate TalentBrew layout (Citi and others)
       const a = /<a [^>]*href="([^"]*\/job\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/.exec(c); const l = /sr-job-location"[^>]*>([\s\S]*?)<\/span>/.exec(c);
