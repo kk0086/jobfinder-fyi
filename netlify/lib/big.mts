@@ -345,7 +345,21 @@ const NIKE: Reader = { name: "Nike", run: async () => {
   return { raw: [...seen.values()] };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin"; name: string; [k: string]: any };
+// SmartRecruiters public postings API (US only).
+function smartrecruiters(name: string, id: string): Reader {
+  const api = (o: number) => `https://api.smartrecruiters.com/v1/companies/${id}/postings?country=us&limit=100&offset=${o}`;
+  return { name, run: async () => {
+    const first = await jget(api(0));
+    const rest = await pool(range(100, Math.min(first?.totalFound || 0, 2500), 100), 5, o => jget(api(o)));
+    const raw: RawJob[] = [first, ...rest].flatMap(p => p?.content || []).map((p: any) => ({
+      company: name, title: p.name, location: [p.location?.city, (p.location?.region || "").length === 2 ? String(p.location.region).toUpperCase() : p.location?.region].filter(Boolean).join(", "),
+      department: p.department?.label || "", url: `https://jobs.smartrecruiters.com/${id}/${p.id}`, posted: p.releasedDate || null,
+    }));
+    return { raw, assumeUS: true };
+  } };
+}
+
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -353,6 +367,7 @@ export function fromSpec(s: Spec): Reader {
     case "radancy": return radancy(s.name, s.origin, s.prefix || "", String(s.org));
     case "eightfold": return eightfold(s.name, s.host, s.domain, s.careersBase, s.queries || QUERIES, s.pagesPer || 30);
     case "jibe": return jibe(s.name, s.origin);
+    case "smartrecruiters": return smartrecruiters(s.name, s.id);
     case "builtin": { const b = BIG.find(x => x.name === s.name); if (!b) throw new Error("not found"); return b; }
     case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
     case "phenom": return phenom(s.name, s.origin, s.locale || "us/en");
