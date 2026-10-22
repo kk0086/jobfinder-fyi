@@ -31,6 +31,8 @@ export default async (req: Request) => {
   dayList.forEach(d => perDay.set(d, { sessions: 0, visitors: new Set(), views: 0 }));
   const visitors = new Set<string>(), returning = new Set<string>();
   const countries = new Map(), devices = new Map(), refs = new Map(), cos = new Map(), titles = new Map();
+  const cities = new Map(), regions = new Map(), browsers = new Map(), oss = new Map(), langs = new Map(), screens = new Map(), utms = new Map(), lands = new Map(), hours = new Map(), dows = new Map(), filterUse = new Map(), searchUse = new Map();
+  let pagedDeep = 0, usedFilters = 0, usedSearch = 0;
   let views = 0, activeSum = 0, engaged = 0, bounced = 0, clicksTotal = 0;
   const actives: number[] = [];
   const now = Date.now();
@@ -44,6 +46,15 @@ export default async (req: Request) => {
     if (s.active >= 10) engaged++;
     if (s.active < 5 && !(s.clicks || []).length) bounced++;
     inc(countries, s.country || "Unknown"); inc(devices, s.device); inc(refs, s.ref || "Direct");
+    if (s.city) inc(cities, `${s.city}${s.region ? ", " + s.region : ""}${s.country ? " (" + s.country + ")" : ""}`);
+    if (s.region && s.country) inc(regions, `${s.region}, ${s.country}`);
+    if (s.browser) inc(browsers, s.browser); if (s.os) inc(oss, s.os);
+    if (s.lang) inc(langs, s.lang); if (s.scr) inc(screens, s.scr); if (s.utm) inc(utms, s.utm); if (s.land) inc(lands, s.land);
+    try { const tz = s.gtz || s.tz || "UTC"; const lt = new Date(new Date(s.start).toLocaleString("en-US", { timeZone: tz }));
+      inc(hours, String(lt.getHours()).padStart(2, "0") + ":00"); inc(dows, ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][lt.getDay()]); } catch {}
+    if ((s.f || []).length) usedFilters++; if ((s.q || []).length) usedSearch++; if ((s.pg || 0) > 0) pagedDeep++;
+    (s.f || []).forEach((f: string) => inc(filterUse, f));
+    (s.q || []).forEach((q: string) => inc(searchUse, q));
     (s.clicks || []).forEach((c: any) => { clicksTotal++; inc(cos, c.co); inc(titles, `${c.co}: ${c.t}`); });
     if (now - s.last < 2 * 60 * 1000) liveV.add(s.vid);
   }
@@ -59,9 +70,12 @@ export default async (req: Request) => {
       bouncePct: n ? Math.round(bounced / n * 100) : 0, jobClicks: clicksTotal, liveNow: liveV.size,
     },
     daily: dayList.map(d => { const p = perDay.get(d)!; return { d, sessions: p.sessions, visitors: p.visitors.size, views: p.views }; }),
+    cities: top(cities, 12), regions: top(regions, 10), browsers: top(browsers, 6), systems: top(oss, 6), languages: top(langs, 8), screens: top(screens, 8), campaigns: top(utms, 8), landing: top(lands, 6),
+    hours: [...Array(24).keys()].map(h => { const k = String(h).padStart(2, "0") + ":00"; return [k, hours.get(k) || 0]; }), weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(k => [k, dows.get(k) || 0]),
+    filters: top(filterUse, 12), searches: top(searchUse, 12), usage: { usedFilters, usedSearch, pagedDeep },
     countries: top(countries), devices: top(devices), referrers: top(refs), topCompanies: top(cos), topJobs: top(titles),
     recent: sessions.sort((a, b) => b.last - a.last).slice(0, 25).map(s => ({
-      when: s.last, country: s.country, device: s.device, ref: s.ref, active: s.active, views: s.views, clicks: (s.clicks || []).length, returning: s.returning,
+      when: s.last, country: s.country, city: s.city, region: s.region, browser: s.browser, os: s.os, device: s.device, ref: s.ref, active: s.active, views: s.views, clicks: (s.clicks || []).length, returning: s.returning,
     })),
     truncated: sessions.length >= 20000,
     coverage,
