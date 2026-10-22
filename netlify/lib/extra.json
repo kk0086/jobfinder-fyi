@@ -284,5 +284,46 @@
 "kind": "jibe",
 "name": "Garmin",
 "origin": "https://careers.garmin.com"
+},
+{
+"kind": "workday",
+"name": "Capital One",
+"host": "capitalone.wd12.myworkdayjobs.com",
+"tenant": "capitalone",
+"site": "Capital_One"
+},
+{
+"kind": "workday",
+"name": "Fidelity Investments",
+"host": "fmr.wd1.myworkdayjobs.com",
+"tenant": "fmr",
+"site": "FidelityCareers"
+},
+{
+"kind": "workday",
+"name": "Broadcom",
+"host": "broadcom.wd1.myworkdayjobs.com",
+"tenant": "broadcom",
+"site": "External_Career"
+},
+{
+"kind": "workday",
+"name": "Morgan Stanley",
+"host": "ms.wd5.myworkdayjobs.com",
+"tenant": "ms",
+"site": "External"
+},
+{
+"kind": "workday",
+"name": "General Motors",
+"host": "generalmotors.wd5.myworkdayjobs.com",
+"tenant": "generalmotors",
+"site": "Careers_GM"
+},
+{
+"kind": "oracle",
+"name": "Oracle",
+"host": "eeho.fa.us2.oraclecloud.com",
+"site": "CX_1"
 }
 ]
