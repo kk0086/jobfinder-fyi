@@ -325,5 +325,87 @@
 "name": "Oracle",
 "host": "eeho.fa.us2.oraclecloud.com",
 "site": "CX_1"
+},
+{
+"kind": "workday",
+"name": "PTC",
+"host": "ptc.wd1.myworkdayjobs.com",
+"tenant": "ptc",
+"site": "PTC"
+},
+{
+"kind": "workday",
+"name": "Automation Anywhere",
+"host": "automationanywhere.wd5.myworkdayjobs.com",
+"tenant": "automationanywhere",
+"site": "AutomationAnywhereJobs"
+},
+{
+"kind": "workday",
+"name": "Qualys",
+"host": "qualys.wd5.myworkdayjobs.com",
+"tenant": "qualys",
+"site": "Careers"
+},
+{
+"kind": "workday",
+"name": "Arctic Wolf",
+"host": "arcticwolf.wd1.myworkdayjobs.com",
+"tenant": "arcticwolf",
+"site": "External"
+},
+{
+"kind": "workday",
+"name": "Proofpoint",
+"host": "proofpoint.wd5.myworkdayjobs.com",
+"tenant": "proofpoint",
+"site": "ProofpointCareers"
+},
+{
+"kind": "workday",
+"name": "Turo",
+"host": "turo.wd12.myworkdayjobs.com",
+"tenant": "turo",
+"site": "Turo_careers"
+},
+{
+"kind": "radancy",
+"name": "Veeam",
+"origin": "https://careers.veeam.com",
+"prefix": "",
+"org": "22681"
+},
+{
+"kind": "smartrecruiters",
+"name": "Canva",
+"id": "Canva"
+},
+{
+"kind": "smartrecruiters",
+"name": "Freshworks",
+"id": "Freshworks"
+},
+{
+"kind": "smartrecruiters",
+"name": "Wise",
+"id": "Wise"
+},
+{
+"kind": "eightfold",
+"name": "Sephora",
+"host": "join.sephora.com",
+"domain": "sephora.com",
+"careersBase": "https://join.sephora.com/careers/job",
+"queries": [
+""
+],
+"pagesPer": 150
+},
+{
+"kind": "workday",
+"name": "Zoom",
+"host": "zoom.wd5.myworkdayjobs.com",
+"tenant": "zoom",
+"site": "Zoom"
 }
 ]
