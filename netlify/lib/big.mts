@@ -359,7 +359,28 @@ function smartrecruiters(name: string, id: string): Reader {
   } };
 }
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters"; name: string; [k: string]: any };
+// Clinch-hosted career sites (same template as Etsy): server-rendered search pages with job cards.
+function clinch(name: string, origin: string, path = "/jobs/search"): Reader {
+  const dec = (t: string) => t.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;|&#x27;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
+  const BROWSER = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html,application/xhtml+xml", "accept-language": "en-US,en;q=0.9" };
+  const page = async (p: number): Promise<RawJob[]> => {
+    const r = await fetch(`${origin}${path}?page=${p}`, { signal: AbortSignal.timeout(14000), headers: BROWSER });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const h = await r.text();
+    return h.split("job-search-results-card-body").slice(1).map(c => {
+      const a = /<a [^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/.exec(c); const l = /job-component-location[\s\S]*?<span[^>]*>([\s\S]*?)<\/span>/.exec(c);
+      return a ? { company: name, title: dec(a[2]), location: l ? dec(l[1]) : "", department: "", url: a[1].startsWith("http") ? a[1] : origin + a[1], posted: null } : null;
+    }).filter(Boolean) as RawJob[];
+  };
+  return { name, run: async () => {
+    const seen = new Map<string, RawJob>();
+    for (let p = 1; p <= 40; p++) { const rows = await page(p); if (!rows.length) break; const before = seen.size; rows.forEach(r => seen.set(r.url, r)); if (seen.size === before) break; }
+    if (!seen.size) throw new Error("no results");
+    return { raw: [...seen.values()] };
+  } };
+}
+
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -367,6 +388,7 @@ export function fromSpec(s: Spec): Reader {
     case "radancy": return radancy(s.name, s.origin, s.prefix || "", String(s.org));
     case "eightfold": return eightfold(s.name, s.host, s.domain, s.careersBase, s.queries || QUERIES, s.pagesPer || 30);
     case "jibe": return jibe(s.name, s.origin);
+    case "clinch": return clinch(s.name, s.origin, s.path || "/jobs/search");
     case "smartrecruiters": return smartrecruiters(s.name, s.id);
     case "builtin": { const b = BIG.find(x => x.name === s.name); if (!b) throw new Error("not found"); return b; }
     case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
