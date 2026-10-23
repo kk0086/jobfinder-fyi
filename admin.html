@@ -32,15 +32,15 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px 6px;text-align:left;
 <div class="card" style="margin-top:12px"><h2>Recent visits</h2><div style="overflow:auto"><table id="recent"></table></div></div>
 </div></div>
 <script>
-const $=id=>document.getElementById(id);let KEY="";try{KEY=sessionStorage.getItem("jfk")||""}catch{}
+const $=id=>document.getElementById(id);let KEY="";try{KEY=localStorage.getItem("jfk")||sessionStorage.getItem("jfk")||""}catch{}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const dur=s=>s>=3600?(s/3600).toFixed(1)+"h":s>=60?Math.floor(s/60)+"m "+(s%60)+"s":s+"s";
 const ago=t=>{const m=(Date.now()-t)/6e4;return m<1?"just now":m<60?Math.round(m)+"m ago":m<1440?Math.round(m/60)+"h ago":Math.round(m/1440)+"d ago"};
 async function load(){
   const r=await fetch("/api/stats?days="+$("days").value,{headers:{"x-admin-key":KEY},cache:"no-store"});
-  if(r.status===401){try{sessionStorage.removeItem("jfk")}catch{};$("app").hidden=true;$("login").hidden=false;$("e").textContent=KEY?"Wrong key.":"";KEY="";return}
+  if(r.status===401){try{sessionStorage.removeItem("jfk");localStorage.removeItem("jfk")}catch{};$("app").hidden=true;$("login").hidden=false;$("e").textContent=KEY?"Wrong key.":"";KEY="";return}
   if(!r.ok){$("e").textContent="Error "+r.status;return}
-  const d=await r.json();try{sessionStorage.setItem("jfk",KEY);localStorage.setItem("jf_owner","1")}catch{}
+  const d=await r.json();try{localStorage.setItem("jfk",KEY);localStorage.setItem("jf_owner","1")}catch{}
   $("login").hidden=true;$("app").hidden=false;const t=d.totals;
   $("sub").innerHTML=`<span class="live"></span>${t.liveNow} active now · updated ${new Date(d.generated).toLocaleTimeString()}`+(d.truncated?" · capped at 20,000 sessions":"");
   const tile=(v,l)=>`<div class="card tile"><b>${v}</b><span>${l}</span></div>`;
@@ -64,6 +64,6 @@ async function load(){
 }
 $("refnow").onclick=async()=>{const b=$("refnow");b.disabled=true;try{const N=window.__nb||87;for(let i=0;i<N;i++){$("refmsg").textContent=`Reading batch ${i+1} of ${N}…`;const r=await fetch("/api/refresh?chunk="+i,{method:"POST",headers:{"x-admin-key":KEY}});if(!r.ok)throw new Error("batch "+(i+1)+" failed ("+r.status+")")}$("refmsg").textContent="Done.";await load()}catch(e){$("refmsg").textContent=String(e.message||e)}b.disabled=false};
 $("f").onsubmit=e=>{e.preventDefault();KEY=$("k").value;$("e").textContent="";load()};
-$("days").onchange=load;$("rf").onclick=load;$("out").onclick=()=>{try{sessionStorage.removeItem("jfk")}catch{};location.reload()};
+$("days").onchange=load;$("rf").onclick=load;$("out").onclick=()=>{try{sessionStorage.removeItem("jfk");localStorage.removeItem("jfk")}catch{};location.reload()};
 if(KEY)load();
 </script></body></html>
