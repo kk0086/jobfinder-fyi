@@ -41,9 +41,33 @@ h1{font-size:22px;margin:0}
 button{font:inherit;padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer}
 details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px}
 @media (max-width:520px){.bar{grid-template-columns:80px 1fr 34px}.job{grid-template-columns:1fr}.job .r{grid-row:auto;grid-column:1;text-align:left}}
+
+#splash{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--bg,#fff);transition:opacity .35s ease}
+#splash.off{opacity:0;pointer-events:none}
+#splash .logo{display:flex;align-items:center;gap:10px;font-size:26px;font-weight:700;letter-spacing:-.5px}
+#splash .ring{position:relative;width:84px;height:84px}
+#splash .ring svg{transform:rotate(-90deg)}
+#splash .ring circle{fill:none;stroke-width:6}
+#splash .ring .bg{stroke:var(--line,#e5e7eb)}
+#splash .ring .fg{stroke:var(--accent,#2563eb);stroke-linecap:round;stroke-dasharray:238.76;stroke-dashoffset:238.76;animation:jfring 3s linear forwards}
+#splash .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+#splash .msg{color:var(--muted,#6b7280);font-size:14px;min-height:1.2em}
+@keyframes jfring{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){#splash .ring .fg{animation:none;stroke-dashoffset:60}}
 </style>
+<script>window.__jp=fetch("/api/jobs").then(function(r){return r.ok?r.json():null}).catch(function(){return null});</script>
 </head>
 <body>
+<div id="splash" role="status" aria-live="polite">
+  <div class="logo"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="var(--accent,#2563eb)"/><circle cx="15" cy="15" r="6.5" fill="none" stroke="#fff" stroke-width="2.6"/><path d="M20 20l6 6" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></svg>Job Finder</div>
+  <div class="ring"><svg width="84" height="84" viewBox="0 0 84 84"><circle class="bg" cx="42" cy="42" r="38"/><circle class="fg" cx="42" cy="42" r="38"/></svg><div class="num" id="splashn">3</div></div>
+  <div class="msg" id="splashm">Finding open roles for you…</div>
+</div>
+<script>(function(){var n=3,el=document.getElementById("splashn"),m=document.getElementById("splashm"),t0=Date.now();
+window.__splash=setInterval(function(){var s=Math.ceil(3-(Date.now()-t0)/1000);if(s>=1)el.textContent=s;else{el.textContent="…";m.textContent="Almost there — loading all roles…"}},200);
+window.hideSplash=function(){clearInterval(window.__splash);var e=document.getElementById("splash");if(e){e.classList.add("off");setTimeout(function(){e.remove()},400)}};
+setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},20000)})();</script>
+
 <div class="wrap">
   <h1>Job Finder</h1>
   <div class="filters">
@@ -180,11 +204,12 @@ function sync() { $("frole").value = F.role; $("fdomain").value = F.domain; $("f
 async function boot() {
   if (DATA.live) {
     $("list").innerHTML = '<div class="meta">Loading jobs…</div>';
-    try { const r = await fetch("/api/jobs"); if (!r.ok) throw 0; DATA = await r.json(); }
-    catch (e) { $("list").innerHTML = '<div class="meta">Could not load jobs. Please refresh the page.</div>'; return; }
+    try { const j = window.__jp ? await window.__jp : null; if (j) DATA = j; else { const r = await fetch("/api/jobs"); if (!r.ok) throw 0; DATA = await r.json(); } }
+    catch (e) { $("list").innerHTML = '<div class="meta">Could not load jobs. Please refresh the page.</div>'; if (window.hideSplash) window.hideSplash(); return; }
   }
   jobs = DATA.jobs.map(prep);
   init();
+  if (window.hideSplash) window.hideSplash();
 }
 boot();
 </script>
