@@ -54,6 +54,7 @@ details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px
 #splash .msg{color:var(--muted,#6b7280);font-size:14px;min-height:1.2em}
 @keyframes jfring{to{stroke-dashoffset:0}}
 @media (prefers-reduced-motion:reduce){#splash .ring .fg{animation:none;stroke-dashoffset:60}}
+.fs{font-style:normal;font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(127,127,127,.18);color:inherit;opacity:.75}
 </style>
 <script>window.__jp=fetch("/api/jobs").then(function(r){return r.ok?r.json():null}).catch(function(){return null});</script>
 </head>
@@ -177,7 +178,7 @@ function render() {
     <a class="job" href="${esc(j.url)}" target="_blank" rel="noopener noreferrer">
       <span class="t">${esc(j.title)}${j.remote ? '<span class="tag">Remote</span>' : ""}${j.example ? '<span class="tag">Your example</span>' : ""}${FIT.includes(j.seniority) ? '<span class="tag">' + esc(j.seniority === "Principal+" ? "Staff / Principal / Group" : j.seniority) + '</span>' : ""}</span>
       <span class="r">${j.tsKind ? j.tsKind + " " : ""}${ago(j.ts)}</span>
-      <span class="c">${esc(j.company)} · ${esc(j.location || "Location n/a")} · ${esc(j.department)}${j.salary_min ? " · " + money(j.salary_min) + (j.salary_max ? "–" + money(j.salary_max) : "") : ""}</span>
+      <span class="c">${esc(j.company)} · ${esc(j.location || "Location n/a")} · ${esc(j.department)}${j.salary_min ? " · " + money(j.salary_min) + (j.salary_max ? "–" + money(j.salary_max) : "") : ""}${j.src === "search" ? " · <i class=\"fs\">from search</i>" : ""}</span>
     </a>`).join("") || '<div class="meta">No roles match these filters.</div>';
 }
 
