@@ -381,14 +381,14 @@ function clinch(name: string, origin: string, path = "/jobs/search"): Reader {
 }
 
 // Adzuna job search (second source for companies we do not read directly). Needs ADZUNA_APP_ID and ADZUNA_APP_KEY.
-const ADZUNA_QUERIES = ["product manager", "senior product manager", "principal product manager", "director product management", "group product manager", "trust and safety", "trust safety product", "technical program manager", "software engineer", "data scientist", "ux designer"];
+const ADZUNA_QUERIES = ["product manager", "senior product manager", "principal product manager", "director product management", "trust and safety", "technical program manager", "software engineer", "data scientist"]; // 8 queries x 3 pages = 24 calls per run (free tier is 25)
 const ADZUNA: Reader = { name: "Adzuna search", run: async () => {
   const id = process.env.ADZUNA_APP_ID, key = process.env.ADZUNA_APP_KEY;
   if (!id || !key) throw new Error("ADZUNA_APP_ID / ADZUNA_APP_KEY not set");
   const get = (q: string, p: number) => jget(`https://api.adzuna.com/v1/api/jobs/us/search/${p}?app_id=${encodeURIComponent(id)}&app_key=${encodeURIComponent(key)}&results_per_page=50&what=${encodeURIComponent(q)}&sort_by=date&max_days_old=30&content-type=application/json`);
   const found = new Map<string, RawJob>();
   const reqs = ADZUNA_QUERIES.flatMap(q => [1, 2, 3].map(p => ({ q, p })));
-  await pool(reqs, 4, async ({ q, p }) => {
+  await pool(reqs, 2, async ({ q, p }) => {
     const j = await get(q, p);
     for (const r of j?.results || []) {
       const loc = (r.location?.display_name || "").trim();
