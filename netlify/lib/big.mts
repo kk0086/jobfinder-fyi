@@ -23,7 +23,7 @@ const range = (from: number, to: number, step: number) => { const a: number[] = 
 // One search phrase per role family, used by the readers that need a keyword to page through results.
 const QUERIES = ["product manager", "software engineer", "data engineer", "machine learning engineer", "business intelligence", "technical program manager", "program manager", "ux designer", "recruiter", "legal counsel", "financial analyst", "marketing manager", "operations manager"];
 
-type Reader = { name: string; run: () => Promise<{ raw: RawJob[]; assumeUS?: boolean }> };
+type Reader = { name: string; run: () => Promise<{ raw: RawJob[]; assumeUS?: boolean; src?: string }> };
 
 function workday(name: string, host: string, tenant: string, site: string, cap = 2000): Reader {
   const api = `https://${host}/wday/cxs/${tenant}/${site}/jobs`;
@@ -380,6 +380,26 @@ function clinch(name: string, origin: string, path = "/jobs/search"): Reader {
   } };
 }
 
+// Adzuna job search (second source for companies we do not read directly). Needs ADZUNA_APP_ID and ADZUNA_APP_KEY.
+const ADZUNA_QUERIES = ["product manager", "senior product manager", "principal product manager", "director product management", "group product manager", "trust and safety", "trust safety product", "technical program manager", "software engineer", "data scientist", "ux designer"];
+const ADZUNA: Reader = { name: "Adzuna search", run: async () => {
+  const id = process.env.ADZUNA_APP_ID, key = process.env.ADZUNA_APP_KEY;
+  if (!id || !key) throw new Error("ADZUNA_APP_ID / ADZUNA_APP_KEY not set");
+  const get = (q: string, p: number) => jget(`https://api.adzuna.com/v1/api/jobs/us/search/${p}?app_id=${encodeURIComponent(id)}&app_key=${encodeURIComponent(key)}&results_per_page=50&what=${encodeURIComponent(q)}&sort_by=date&max_days_old=30&content-type=application/json`);
+  const found = new Map<string, RawJob>();
+  const reqs = ADZUNA_QUERIES.flatMap(q => [1, 2, 3].map(p => ({ q, p })));
+  await pool(reqs, 4, async ({ q, p }) => {
+    const j = await get(q, p);
+    for (const r of j?.results || []) {
+      const loc = (r.location?.display_name || "").trim();
+      found.set(String(r.id), { company: String(r.company?.display_name || "").trim(), title: r.title, location: loc, department: r.category?.label || "", url: r.redirect_url, posted: r.created || null });
+    }
+  });
+  const raw = [...found.values()].filter(r => r.company && r.title);
+  if (!raw.length) throw new Error("no results");
+  return { raw, assumeUS: true, src: "search" };
+} };
+
 export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
@@ -419,14 +439,15 @@ export const BIG: Reader[] = [
   ...(extra as Spec[]).map(fromSpec),
   ATLASSIAN,
   NIKE,
+  ADZUNA,
 ];
 
 export async function crawlBig(i: number) {
   const r = BIG[i];
   try {
-    const { raw, assumeUS } = await r.run();
+    const { raw, assumeUS, src } = await r.run();
     const seen = new Set<string>(); const jobs: Job[] = [];
-    for (const x of raw) { if (!x.title || !x.url || seen.has(x.url)) continue; seen.add(x.url); const n = normalizeJob(x, { assumeUS }); if (n) jobs.push(n); }
+    for (const x of raw) { if (!x.title || !x.url || seen.has(x.url)) continue; seen.add(x.url); const n = normalizeJob(x, { assumeUS }); if (n) { if (src) (n as any).src = src; jobs.push(n); } }
     return { jobs, report: [{ name: r.name, ok: true, total: raw.length, kept: jobs.length }], names: [r.name] };
   } catch (e: any) {
     return { jobs: [] as Job[], report: [{ name: r.name, ok: false, total: 0, kept: 0, error: String(e?.message || e).slice(0, 80) }], names: [r.name] };

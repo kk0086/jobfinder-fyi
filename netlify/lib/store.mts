@@ -33,10 +33,15 @@ export async function loadAll() {
     if (!b) continue;
     at = at > b.at ? at : b.at;
     for (const r of b.report) if (feedNames.has(r.name)) fresh.add(r.name);
-    jobs.push(...b.jobs.filter(j => feedNames.has(j.company) || !b.report.length));
+    jobs.push(...b.jobs.filter(j => feedNames.has(j.company) || (j as any).src === "search" || !b.report.length));
   }
   // Seed rows: browser-read companies always; feed companies only until their first live refresh.
   for (const j of (seed as any).jobs as Job[]) if (!feedNames.has(j.company) || !fresh.has(j.company)) jobs.push(j);
+  // Search-sourced roles are only kept for employers we do not already read directly (no duplicates).
+  const norm = (n: string) => n.toLowerCase().replace(/\b(inc|llc|ltd|corp|corporation|company|co|the|group|holdings|technologies|technology)\b\.?/g, "").replace(/[^a-z0-9]/g, "");
+  const known = new Set<string>([...feedNames].map(norm));
+  const have = new Set<string>((seed as any).jobs.filter((j: Job) => !feedNames.has(j.company)).map((j: Job) => norm(j.company)));
+  for (let i = jobs.length - 1; i >= 0; i--) if ((jobs[i] as any).src === "search") { const k = norm(jobs[i].company); if (known.has(k) || have.has(k)) jobs.splice(i, 1); }
   const seenUrl = new Set<string>();
   const unique = jobs.filter(j => { const k = j.company + "|" + j.url; if (seenUrl.has(k)) return false; seenUrl.add(k); return true; });
   return { jobs: unique, at, blobs };
