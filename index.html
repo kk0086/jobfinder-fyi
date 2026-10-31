@@ -62,9 +62,11 @@ details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px
 .ms.open .pn{display:block}
 .ms .pn input[type=search]{width:100%;box-sizing:border-box;font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
 .ms .ls{max-height:300px;overflow:auto;margin:6px 0}
-.ms .ls label{display:flex;gap:8px;align-items:center;padding:5px 4px;border-radius:6px;cursor:pointer;font-size:14px}
+.ms .ls label{display:grid;grid-template-columns:1fr auto 20px;gap:10px;align-items:center;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1.25}
+.ms .ls label>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.ms .ls input[type=checkbox]{flex:none;width:16px;height:16px;min-width:0;padding:0;margin:0;justify-self:end;accent-color:var(--accent)}
 .ms .ls label:hover{background:var(--accent-soft)}
-.ms .ls span.n{margin-left:auto;color:var(--muted);font-size:12px}
+.ms .ls span.n{color:var(--muted);font-size:12px;text-align:right;min-width:28px}
 .ms .ft{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
 .ms .ft a{color:var(--accent);cursor:pointer}
 </style>
@@ -154,10 +156,10 @@ function msInit(entries) {
   MS = entries;
   const w = $("fcw"), draw = () => {
     const t = $("fcs").value.trim().toLowerCase();
-    $("fcls").innerHTML = MS.filter(([k]) => !t || k.toLowerCase().includes(t)).slice(0, 400).map(([k, n]) => `<label><input type="checkbox" value="${esc(k)}" ${F.company.includes(k) ? "checked" : ""}> <span>${esc(k)}</span><span class="n">${n}</span></label>`).join("") || '<div class="meta">No match</div>';
+    $("fcls").innerHTML = MS.filter(([k]) => !t || k.toLowerCase().includes(t)).slice(0, 400).map(([k, n]) => `<label title="${esc(k)}"><span>${esc(k)}</span><span class="n">${n}</span><input type="checkbox" value="${esc(k)}" ${F.company.includes(k) ? "checked" : ""}></label>`).join("") || '<div class="meta">No match</div>';
   };
   w.draw = draw; draw();
-  $("fcb").onclick = () => { w.classList.toggle("open"); if (w.classList.contains("open")) { draw(); $("fcs").focus(); } };
+  $("fcb").onclick = () => { w.classList.toggle("open"); if (w.classList.contains("open")) { const pn = w.querySelector(".pn"); pn.style.left = "0"; pn.style.right = "auto"; const r = w.getBoundingClientRect(); if (r.left + pn.offsetWidth > innerWidth - 8) { pn.style.left = "auto"; pn.style.right = "0"; if (r.right - pn.offsetWidth < 8) { pn.style.right = "auto"; pn.style.left = (8 - r.left) + "px"; } } draw(); $("fcs").focus(); } };
   $("fcs").oninput = draw;
   $("fcls").addEventListener("change", e => {
     const v = e.target.value; F.company = e.target.checked ? [...F.company, v] : F.company.filter(x => x !== v);
