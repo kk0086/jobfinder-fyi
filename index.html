@@ -55,6 +55,18 @@ details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px
 @keyframes jfring{to{stroke-dashoffset:0}}
 @media (prefers-reduced-motion:reduce){#splash .ring .fg{animation:none;stroke-dashoffset:60}}
 .fs{font-style:normal;font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(127,127,127,.18);color:inherit;opacity:.75}
+.ms{position:relative}
+.ms>button{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;min-width:170px;text-align:left;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.ms>button.on{border-color:var(--accent);background:var(--accent-soft)}
+.ms .pn{display:none;position:absolute;z-index:30;top:calc(100% + 4px);left:0;width:300px;max-width:88vw;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:8px}
+.ms.open .pn{display:block}
+.ms .pn input[type=search]{width:100%;box-sizing:border-box;font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+.ms .ls{max-height:300px;overflow:auto;margin:6px 0}
+.ms .ls label{display:flex;gap:8px;align-items:center;padding:5px 4px;border-radius:6px;cursor:pointer;font-size:14px}
+.ms .ls label:hover{background:var(--accent-soft)}
+.ms .ls span.n{margin-left:auto;color:var(--muted);font-size:12px}
+.ms .ft{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.ms .ft a{color:var(--accent);cursor:pointer}
 </style>
 <script>window.__jp=fetch("/api/jobs").then(function(r){return r.ok?r.json():null}).catch(function(){return null});</script>
 </head>
@@ -75,7 +87,7 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
     <select id="fdomain"><option value="">All domains</option></select>
     <select id="frole"><option value="">All roles</option><option value="Product management">Product management</option><option value="Software engineering">Software engineering</option><option value="Data engineering">Data engineering, ML &amp; BI</option><option value="Technical program management">Technical program management</option><option value="Program management">Program management</option><option value="UX design">UX design</option><option value="Human resources">Human resources</option><option value="Legal">Legal</option><option value="Financial analyst">Financial analyst</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option></select>
     <input id="q" type="search" placeholder="Search title, company, location">
-    <select id="fc"><option value="">All companies</option></select>
+    <div class="ms" id="fcw"><button type="button" id="fcb"><span id="fcl">All companies</span><span>▾</span></button><input type="hidden" id="fc"><div class="pn"><input type="search" id="fcs" placeholder="Search companies"><div class="ls" id="fcls"></div><div class="ft"><a id="fcclr">Clear</a><a id="fcdone">Done</a></div></div></div>
     <select id="fs"><option value="">All states</option></select>
     <select id="fd"><option value="">All departments</option></select>
     <select id="fl"><option value="">All seniority</option></select>
@@ -102,8 +114,8 @@ const prep = j => {
   return {...j, ts: p ?? u, tsKind: p ? "Posted" : (u ? "Updated" : "")};
 };
 const FIT = ["Director", "Executive", "Principal+"];
-const DEFAULTS = {company:"", state:"", dept:"", level:"", remote:"", q:"", role:"", domain:"", fit:false};
-const F = {...DEFAULTS};
+const DEFAULTS = {company:[], state:"", dept:"", level:"", remote:"", q:"", role:"", domain:"", fit:false};
+const F = {...DEFAULTS, company: []};
 let page = 0; const PER = 50;
 
 const ago = ts => {
@@ -123,7 +135,7 @@ function filtered(skip) {
     (!F.role || j.role === F.role) &&
     (skip === "domain" || !F.domain || j.domains.includes(F.domain)) &&
     (!F.fit || FIT.includes(j.seniority)) &&
-    (!F.company || j.company === F.company) &&
+    (!F.company.length || F.company.includes(j.company)) &&
     (!F.state || j.states.includes(F.state)) &&
     (!F.dept || j.department === F.dept) &&
     (!F.level || j.seniority === F.level) &&
@@ -137,10 +149,36 @@ function fillSelect(id, entries) {
   el.innerHTML = first + entries.map(([k, n]) => `<option value="${esc(k)}">${esc(k)} (${n})</option>`).join("");
 }
 
+let MS = [];
+function msInit(entries) {
+  MS = entries;
+  const w = $("fcw"), draw = () => {
+    const t = $("fcs").value.trim().toLowerCase();
+    $("fcls").innerHTML = MS.filter(([k]) => !t || k.toLowerCase().includes(t)).slice(0, 400).map(([k, n]) => `<label><input type="checkbox" value="${esc(k)}" ${F.company.includes(k) ? "checked" : ""}> <span>${esc(k)}</span><span class="n">${n}</span></label>`).join("") || '<div class="meta">No match</div>';
+  };
+  w.draw = draw; draw();
+  $("fcb").onclick = () => { w.classList.toggle("open"); if (w.classList.contains("open")) { draw(); $("fcs").focus(); } };
+  $("fcs").oninput = draw;
+  $("fcls").addEventListener("change", e => {
+    const v = e.target.value; F.company = e.target.checked ? [...F.company, v] : F.company.filter(x => x !== v);
+    page = 0; const h = $("fc"); h.value = F.company.join(", "); h.dispatchEvent(new Event("change", { bubbles: true })); msSync(true); render();
+  });
+  $("fcclr").onclick = () => { F.company = []; page = 0; msSync(); render(); };
+  $("fcdone").onclick = () => w.classList.remove("open");
+  document.addEventListener("click", e => { if (!w.contains(e.target)) w.classList.remove("open"); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") w.classList.remove("open"); });
+}
+function msSync(keep) {
+  const n = F.company.length;
+  $("fcl").textContent = n === 0 ? "All companies" : n === 1 ? F.company[0] : n + " companies";
+  $("fcb").classList.toggle("on", n > 0);
+  if (!keep && $("fcw").draw) $("fcw").draw();
+}
+
 function bars(title, entries, key, max = 5) {
   const top = entries.slice(0, max), peak = top[0] ? top[0][1] : 1;
   return `<div class="card"><h2>${title}</h2>${top.map(([k, n]) =>
-    `<div class="bar ${F[key] === k ? "on" : ""}" data-k="${key}" data-v="${esc(k)}" title="Filter by ${esc(k)}"><span class="l">${esc(k)}</span><span class="t"><i style="width:${n / peak * 100}%"></i></span><span class="n">${n}</span></div>`).join("")}</div>`;
+    `<div class="bar ${(key === "company" ? F.company.includes(k) : F[key] === k) ? "on" : ""}" data-k="${key}" data-v="${esc(k)}" title="Filter by ${esc(k)}"><span class="l">${esc(k)}</span><span class="t"><i style="width:${n / peak * 100}%"></i></span><span class="n">${n}</span></div>`).join("")}</div>`;
 }
 
 function render() {
@@ -185,23 +223,23 @@ function render() {
 function init() {
   const when = new Date(DATA.generated_at);
   $("asof").textContent = `Data as of ${isNaN(when) ? "unknown" : when.toLocaleString()} · ${DATA.companyCount ?? DATA.companies.length} companies`;
-  fillSelect("fc", count(jobs, j => j.company));
+  msInit(count(jobs, j => j.company));
   fillSelect("fs", count(jobs, j => j.states));
   fillSelect("fd", count(jobs, j => j.department));
   fillSelect("fl", count(jobs, j => j.seniority));
   const bind = (id, key, ev = "change") => $(id).addEventListener(ev, e => { F[key] = e.target.value; page = 0; sync(); render(); });
   bind("frole", "role"); bind("fdomain", "domain"); $("ffit").addEventListener("change", e => { F.fit = e.target.checked; page = 0; render(); });
-  bind("fc", "company"); bind("fs", "state"); bind("fd", "dept"); bind("fl", "level"); bind("fr", "remote"); bind("q", "q", "input");
-  $("reset").onclick = () => { Object.assign(F, DEFAULTS); $("q").value = ""; page = 0; sync(); render(); };
+  bind("fs", "state"); bind("fd", "dept"); bind("fl", "level"); bind("fr", "remote"); bind("q", "q", "input");
+  $("reset").onclick = () => { Object.assign(F, DEFAULTS, { company: [] }); $("q").value = ""; page = 0; sync(); render(); };
   const pgClick = e => { const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return; page += +b.dataset.pg; render(); (e.currentTarget.id === "pgBot" ? $("count") : $("pgTop")).scrollIntoView({ block: "start" }); };
   $("pgTop").onclick = pgClick; $("pgBot").onclick = pgClick;
   $("charts").addEventListener("click", e => {
     const b = e.target.closest(".bar[data-k]"); if (!b) return;
-    const k = b.dataset.k, v = b.dataset.v; F[k] = F[k] === v ? "" : v; page = 0; sync(); render();
+    const k = b.dataset.k, v = b.dataset.v; if (k === "company") F.company = F.company.includes(v) ? F.company.filter(x => x !== v) : [...F.company, v]; else F[k] = F[k] === v ? "" : v; page = 0; sync(); render();
   });
   render();
 }
-function sync() { $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; $("fc").value = F.company; $("fs").value = F.state; $("fd").value = F.dept; $("fl").value = F.level; $("fr").value = F.remote; }
+function sync() { $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; msSync(); $("fs").value = F.state; $("fd").value = F.dept; $("fl").value = F.level; $("fr").value = F.remote; }
 async function boot() {
   if (DATA.live) {
     $("list").innerHTML = '<div class="meta">Loading jobs…</div>';
