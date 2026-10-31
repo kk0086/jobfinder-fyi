@@ -2,11 +2,11 @@ import type { Config } from "@netlify/functions";
 import { runChunk } from "../lib/store.mts";
 import { FEED_CHUNKS as CHUNKS } from "../lib/crawl.mts";
 
-// Fires six times in a row each morning (13:00-13:20 UTC); each run reads one sixth of the company job boards.
+// Fires every minute from 13:00 to 13:47 UTC (48 runs); each run reads one slice of the company job boards.
 export default async () => {
-  const chunk = Math.min(CHUNKS - 1, Math.floor(new Date().getUTCMinutes() / 4));
+  const chunk = Math.min(CHUNKS - 1, new Date().getUTCMinutes());
   const r = await runChunk(chunk);
   console.log("refresh", JSON.stringify(r));
 };
 
-export const config: Config = { schedule: "0,4,8,12,16,20 13 * * *" };
+export const config: Config = { schedule: "0-47 13 * * *" };

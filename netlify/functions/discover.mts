@@ -1,6 +1,9 @@
 import type { Config } from "@netlify/functions";
 import { isOwner } from "../lib/auth.mts";
-import { readFeed, type Feed } from "../lib/crawl.mts";
+import { getStore } from "@netlify/blobs";
+import { readFeed, loadFeeds, type Feed } from "../lib/crawl.mts";
+import { BIG } from "../lib/big.mts";
+import seed from "../lib/seed.json" with { type: "json" };
 import { normalizeJob } from "../lib/normalize.mts";
 
 // Owner-only board discovery. Nothing is stored; results go back to the caller.
@@ -46,6 +49,23 @@ export default async (req: Request) => {
       } catch { return null; }
     });
     return Response.json(res.filter(Boolean));
+  }
+  if (b.action === "register") {
+    // entries: [slug, name][] for one ats. Appends to the registry, skipping boards and companies we already have.
+    const store = getStore("feed");
+    const reg = ((await store.get("registry", { type: "json" }).catch(() => null)) as Feed[] | null) || [];
+    const norm = (n: string) => n.toLowerCase().replace(/\b(inc|llc|ltd|corp|corporation|company|co|the|group|holdings|technologies|technology)\b\.?/g, "").replace(/[^a-z0-9]/g, "");
+    const all = await loadFeeds();
+    const names = new Set<string>([...all.map(f => norm(f.name)), ...BIG.map(x => norm(x.name)), ...((seed as any).jobs as any[]).map(j => norm(j.company))]);
+    const keys = new Set(all.map(f => f.ats + "|" + f.slug));
+    let added = 0, dupe = 0;
+    for (const [slug, name] of b.entries as [string, string][]) {
+      const k = b.ats + "|" + slug, n = norm(name);
+      if (keys.has(k) || !n || names.has(n)) { dupe++; continue; }
+      keys.add(k); names.add(n); reg.push({ name, ats: b.ats, slug }); added++;
+    }
+    await store.setJSON("registry", reg);
+    return Response.json({ added, dupe, registry: reg.length });
   }
   return new Response("bad action", { status: 400 });
 };

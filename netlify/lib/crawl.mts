@@ -1,11 +1,26 @@
 import { normalizeJob, type Job, type RawJob } from "./normalize.mts";
+import { getStore } from "@netlify/blobs";
 import feeds from "./feeds.json" with { type: "json" };
 
 export type Feed = { name: string; ats: "greenhouse" | "ashby" | "lever"; slug: string };
 export const FEEDS = feeds as Feed[];
-export const FEED_CHUNKS = 6;
+export const FEED_CHUNKS = 48;
 export const CHUNKS = FEED_CHUNKS; // feed batches; browser-less big-company batches follow (see store.mts)
 export const chunkOf = (i: number) => i % FEED_CHUNKS;
+
+// Company boards = the built-in list (feeds.json) + boards registered later from the admin discovery tool (stored in Blobs).
+// The registry is append-only, so a company keeps the same position (and batch) once added.
+let feedCache: { t: number; list: Feed[] } | null = null;
+export async function loadFeeds(): Promise<Feed[]> {
+  if (feedCache && Date.now() - feedCache.t < 60000) return feedCache.list;
+  let reg: Feed[] = [];
+  try { reg = ((await getStore("feed").get("registry", { type: "json" })) as Feed[]) || []; } catch {}
+  const seen = new Set(FEEDS.map(f => f.ats + "|" + f.slug));
+  const list = [...FEEDS];
+  for (const f of reg) { if (!f?.slug || !f?.name) continue; const k = f.ats + "|" + f.slug; if (seen.has(k)) continue; seen.add(k); list.push(f); }
+  feedCache = { t: Date.now(), list };
+  return list;
+}
 
 async function getJson(url: string, ms = 12000): Promise<any> {
   const ctl = new AbortController();
@@ -48,7 +63,7 @@ export type CompanyResult = { name: string; ok: boolean; total: number; kept: nu
 // Reads every feed in one chunk and returns normalized roles plus a per-company report.
 export async function crawlChunk(chunk: number, budgetMs = 24000) {
   const started = Date.now();
-  const mine = FEEDS.filter((_, i) => chunkOf(i) === chunk);
+  const mine = (await loadFeeds()).filter((_, i) => chunkOf(i) === chunk);
   const jobs: Job[] = [];
   const report: CompanyResult[] = [];
   let next = 0;

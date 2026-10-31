@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import { crawlChunk, FEEDS, FEED_CHUNKS, chunkOf } from "./crawl.mts";
+import { crawlChunk, loadFeeds, FEED_CHUNKS } from "./crawl.mts";
 import { crawlBig, BIG } from "./big.mts";
 
 export const TOTAL_BATCHES = FEED_CHUNKS + BIG.length;
@@ -10,13 +10,13 @@ type ChunkBlob = { at: string; jobs: Job[]; report: { name: string; ok: boolean;
 
 export async function runChunk(chunk: number) {
   const store = getStore("feed");
-  const prev = (await store.get(`chunk-${chunk}`, { type: "json" }).catch(() => null)) as ChunkBlob | null;
+  const prev = (await store.get(`v2-chunk-${chunk}`, { type: "json" }).catch(() => null)) as ChunkBlob | null;
   const { jobs, report } = chunk < FEED_CHUNKS ? await crawlChunk(chunk) : await crawlBig(chunk - FEED_CHUNKS);
   const failed = new Set(report.filter(r => !r.ok).map(r => r.name));
   // A company that failed this run keeps its previous roles instead of vanishing.
   const kept = prev ? prev.jobs.filter(j => failed.has(j.company)) : [];
   const out: ChunkBlob = { at: new Date().toISOString(), jobs: [...jobs, ...kept], report };
-  await store.setJSON(`chunk-${chunk}`, out);
+  await store.setJSON(`v2-chunk-${chunk}`, out);
   return { chunk, companies: report.length, failed: [...failed], roles: out.jobs.length, at: out.at };
 }
 
@@ -24,8 +24,8 @@ let cache: { t: number; body: Uint8Array } | null = null;
 
 export async function loadAll() {
   const store = getStore("feed");
-  const blobs = await Promise.all(Array.from({ length: TOTAL_BATCHES }, (_, i) => store.get(`chunk-${i}`, { type: "json" }).catch(() => null) as Promise<ChunkBlob | null>));
-  const feedNames = new Set([...FEEDS.map(f => f.name), ...BIG.map(b => b.name)]);
+  const blobs = await Promise.all(Array.from({ length: TOTAL_BATCHES }, (_, i) => store.get(`v2-chunk-${i}`, { type: "json" }).catch(() => null) as Promise<ChunkBlob | null>));
+  const feedNames = new Set([...(await loadFeeds()).map(f => f.name), ...BIG.map(b => b.name)]);
   const fresh = new Set<string>();
   const jobs: Job[] = [];
   let at = "";

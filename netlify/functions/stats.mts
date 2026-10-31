@@ -80,7 +80,7 @@ export default async (req: Request) => {
     truncated: sessions.length >= 20000,
     coverage,
     refresh: await Promise.all(Array.from({ length: CHUNKS }, async (_, i) => {
-      const b: any = await gs("feed").get(`chunk-${i}`, { type: "json" }).catch(() => null);
+      const b: any = await gs("feed").get(`v2-chunk-${i}`, { type: "json" }).catch(() => null);
       return b ? { chunk: i, at: b.at, companies: b.report.length, failed: b.report.filter((r: any) => !r.ok).map((r: any) => r.name + (r.error ? ` (${r.error})` : "")), roles: b.jobs.length } : { chunk: i, at: null };
     })),
   };
