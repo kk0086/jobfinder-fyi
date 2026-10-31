@@ -14,7 +14,7 @@ let feedCache: { t: number; list: Feed[] } | null = null;
 export async function loadFeeds(): Promise<Feed[]> {
   if (feedCache && Date.now() - feedCache.t < 60000) return feedCache.list;
   let reg: Feed[] = [];
-  try { reg = ((await getStore("feed").get("registry", { type: "json" })) as Feed[]) || []; } catch {}
+  try { reg = ((await getStore({ name: "feed", consistency: "strong" }).get("registry", { type: "json" })) as Feed[]) || []; } catch {}
   const seen = new Set(FEEDS.map(f => f.ats + "|" + f.slug));
   const list = [...FEEDS];
   for (const f of reg) { if (!f?.slug || !f?.name) continue; const k = f.ats + "|" + f.slug; if (seen.has(k)) continue; seen.add(k); list.push(f); }

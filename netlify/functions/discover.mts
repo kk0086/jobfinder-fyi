@@ -52,7 +52,7 @@ export default async (req: Request) => {
   }
   if (b.action === "register") {
     // entries: [slug, name][] for one ats. Appends to the registry, skipping boards and companies we already have.
-    const store = getStore("feed");
+    const store = getStore({ name: "feed", consistency: "strong" });
     const reg = ((await store.get("registry", { type: "json" }).catch(() => null)) as Feed[] | null) || [];
     const norm = (n: string) => n.toLowerCase().replace(/\b(inc|llc|ltd|corp|corporation|company|co|the|group|holdings|technologies|technology)\b\.?/g, "").replace(/[^a-z0-9]/g, "");
     const all = await loadFeeds();
