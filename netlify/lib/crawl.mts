@@ -17,7 +17,7 @@ async function getJson(url: string, ms = 12000): Promise<any> {
   } finally { clearTimeout(timer); }
 }
 
-async function readFeed(f: Feed): Promise<RawJob[]> {
+export async function readFeed(f: Feed): Promise<RawJob[]> {
   if (f.ats === "greenhouse") {
     const j = await getJson(`https://boards-api.greenhouse.io/v1/boards/${f.slug}/jobs`);
     return (j.jobs || []).map((x: any) => ({
