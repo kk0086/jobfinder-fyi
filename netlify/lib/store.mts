@@ -32,7 +32,7 @@ export async function loadAll() {
   for (const b of blobs) {
     if (!b) continue;
     at = at > b.at ? at : b.at;
-    for (const r of b.report) if (feedNames.has(r.name)) fresh.add(r.name);
+    for (const r of b.report) if (r.ok && feedNames.has(r.name)) fresh.add(r.name); // failed companies keep their last known (seed) roles
     jobs.push(...b.jobs.filter(j => feedNames.has(j.company) || (j as any).src === "search" || !b.report.length));
   }
   // Seed rows: browser-read companies always; feed companies only until their first live refresh.
