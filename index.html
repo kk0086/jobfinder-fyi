@@ -76,6 +76,20 @@ details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px
 .brand{margin:0 0 10px;line-height:0}.brand img{height:62px;width:auto;display:block}
 #splash .logo img{height:84px;width:auto;display:block}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .brand img,:root:not([data-theme="light"]) #splash .logo img{background:#fff;border-radius:10px;padding:6px 12px;box-sizing:content-box}}
+.foot{margin:40px 0 24px;padding-top:22px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 26px;align-items:center;color:var(--muted);font-size:15px}
+.foot a,.foot button{color:var(--muted);font:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:none}
+.foot a:hover,.foot button:hover{color:var(--ink);text-decoration:underline}
+dialog#cd{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:22px;width:min(440px,92vw);box-shadow:0 18px 50px rgba(0,0,0,.28)}
+dialog#cd::backdrop{background:rgba(0,0,0,.45)}
+#cd h2{margin:0 0 4px;font-size:20px}#cd p.s{margin:0 0 14px;color:var(--muted);font-size:14px}
+#cd label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
+#cd input,#cd textarea{width:100%;box-sizing:border-box;font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+#cd textarea{min-height:120px;resize:vertical}
+#cd .row{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+#cd .row button{font:inherit;padding:9px 16px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+#cd .row button.go{background:var(--accent);border-color:var(--accent);color:#fff}
+#cd .row button:disabled{opacity:.6;cursor:default}
+#cd .msg2{margin-top:12px;font-size:14px;min-height:1.2em}
 </style>
 <script>window.__jp=fetch("/api/jobs").then(function(r){return r.ok?r.json():null}).catch(function(){return null});</script>
 </head>
@@ -111,7 +125,27 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
   <div class="pager" id="pgTop"></div>
   <div class="list" id="list"></div>
   <div class="pager" id="pgBot"></div>
+  <footer class="foot"><span>&copy; 2026 Jobfinder.fyi</span><button type="button" id="contactBtn">Contact</button><a href="/privacy.html">Privacy</a></footer>
 </div>
+<dialog id="cd">
+  <form name="contact" method="POST" action="/" data-netlify="true" netlify-honeypot="bot-field" id="cf">
+    <h2>Contact us</h2><p class="s">Feedback, questions or ideas &mdash; we read every message.</p>
+    <input type="hidden" name="form-name" value="contact"><input type="hidden" name="subject" value="Contact Message">
+    <p style="display:none"><label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
+    <label for="cn">Name</label><input id="cn" name="name" required maxlength="120" autocomplete="name">
+    <label for="ce">Email</label><input id="ce" name="email" type="email" required maxlength="200" autocomplete="email">
+    <label for="cm">Feedback / Questions</label><textarea id="cm" name="message" required maxlength="4000"></textarea>
+    <div class="msg2" id="cmsg" role="status"></div>
+    <div class="row"><button type="button" id="ccancel">Close</button><button type="submit" class="go" id="csend">Send</button></div>
+  </form>
+</dialog>
+<script>(function(){var d=document.getElementById("cd"),f=document.getElementById("cf"),m=document.getElementById("cmsg"),b=document.getElementById("csend");
+document.getElementById("contactBtn").onclick=function(){m.textContent="";b.disabled=false;if(d.showModal)d.showModal();else d.setAttribute("open","")};
+document.getElementById("ccancel").onclick=function(){d.close()};
+d.addEventListener("click",function(e){if(e.target===d)d.close()});
+f.addEventListener("submit",function(e){e.preventDefault();b.disabled=true;m.textContent="Sending\u2026";
+var body=new URLSearchParams(new FormData(f)).toString();
+fetch("/",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:body}).then(function(r){if(!r.ok)throw 0;m.style.color="var(--ok)";m.textContent="Thanks! Your message was sent.";f.reset();setTimeout(function(){if(d.open)d.close();m.style.color=""},2200)}).catch(function(){m.style.color="var(--bad)";m.textContent="Could not send. Please try again in a moment.";b.disabled=false})})})();</script>
 <script>
 let DATA = {"live": true, "generated_at": "2026-10-21T00:30:00-07:00", "companies": [], "companyCount": 500};
 const $ = id => document.getElementById(id);
