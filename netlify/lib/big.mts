@@ -400,6 +400,21 @@ const ADZUNA: Reader = { name: "Adzuna search", run: async () => {
   return { raw, assumeUS: true, src: "search" };
 } };
 
+// Shopify: the careers page is server-rendered with one anchor per job (title in h3, location in p, discipline as a data attribute).
+const SHOPIFY: Reader = { name: "Shopify", run: async () => {
+  const dec = (t: string) => t.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;|&#x27;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
+  const r = await fetch("https://www.shopify.com/careers", { signal: AbortSignal.timeout(20000), headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html,application/xhtml+xml", "accept-language": "en-US,en;q=0.9" } });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const h = await r.text(); const seen = new Set<string>(); const out: RawJob[] = [];
+  for (const m of h.matchAll(/<a\b([^>]*href="(\/careers\/[a-z0-9-]+_[0-9a-f-]{36})"[^>]*)>([\s\S]*?)<\/a>/g)) {
+    if (seen.has(m[2])) continue; seen.add(m[2]);
+    const t = /<h3[^>]*>([\s\S]*?)<\/h3>/.exec(m[3]); const l = /<p[^>]*>([\s\S]*?)<\/p>/.exec(m[3]); const d = /data-component-extra-discipline="([^"]*)"/.exec(m[1]);
+    if (t) out.push({ company: "Shopify", title: dec(t[1]), location: l ? dec(l[1]) : "", department: d ? dec(d[1]) : "", url: "https://www.shopify.com" + m[2], posted: null });
+  }
+  if (!out.length) throw new Error("no results");
+  return { raw: out };
+} };
+
 export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
@@ -440,6 +455,7 @@ export const BIG: Reader[] = [
   ATLASSIAN,
   NIKE,
   ADZUNA,
+  SHOPIFY,
 ];
 
 export async function crawlBig(i: number) {
