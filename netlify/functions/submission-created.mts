@@ -7,7 +7,7 @@ const esc = (s: string) => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<
 
 export const handler = async (event: { body?: string | null }) => {
   const key = process.env.RESEND_API_KEY;
-  if (!key) return { statusCode: 200, body: "no RESEND_API_KEY; skipped" };
+  if (!key) { console.log("submission-created: RESEND_API_KEY missing, skipped"); return { statusCode: 200, body: "no RESEND_API_KEY; skipped" }; }
   let data: Record<string, string> = {};
   try { data = JSON.parse(event.body || "{}")?.payload?.data || {}; } catch {}
   if (!data.message) return { statusCode: 200, body: "empty" };
@@ -21,6 +21,6 @@ export const handler = async (event: { body?: string | null }) => {
       html: `<p><b>Name:</b> ${esc(name)}<br><b>Email:</b> ${esc(email)}</p><p style="white-space:pre-wrap">${esc(message)}</p>`,
     }),
   });
-  if (!r.ok) console.log("resend failed", r.status, (await r.text()).slice(0, 200));
+  console.log(r.ok ? "submission-created: sent to support@" : "submission-created: resend failed " + r.status + " " + (await r.text()).slice(0, 300));
   return { statusCode: 200, body: r.ok ? "sent" : "failed" };
 };
