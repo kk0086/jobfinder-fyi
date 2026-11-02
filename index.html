@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Job Finder</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
 :root{--bg:#fafaf8;--card:#fff;--ink:#1d1d1b;--muted:#6b6b66;--line:#e6e5df;--accent:#2f6fed;--accent-soft:#e8f0fe;--ok:#1a7f4b;--warn:#b26a00;--bad:#b3261e}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141413;--card:#1c1c1a;--ink:#ecebe6;--muted:#9a9990;--line:#2f2f2b;--accent:#6c9cff;--accent-soft:#1d2a44;--ok:#4cc38a;--warn:#e0a040;--bad:#f27b73;color-scheme:dark}}
@@ -69,12 +73,15 @@ details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px
 .ms .ls span.n{color:var(--muted);font-size:12px;text-align:right;min-width:28px}
 .ms .ft{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
 .ms .ft a{color:var(--accent);cursor:pointer}
+.brand{margin:0 0 10px;line-height:0}.brand img{height:62px;width:auto;display:block}
+#splash .logo img{height:84px;width:auto;display:block}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .brand img,:root:not([data-theme="light"]) #splash .logo img{background:#fff;border-radius:10px;padding:6px 12px;box-sizing:content-box}}
 </style>
 <script>window.__jp=fetch("/api/jobs").then(function(r){return r.ok?r.json():null}).catch(function(){return null});</script>
 </head>
 <body>
 <div id="splash" role="status" aria-live="polite">
-  <div class="logo"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="var(--accent,#2563eb)"/><circle cx="15" cy="15" r="6.5" fill="none" stroke="#fff" stroke-width="2.6"/><path d="M20 20l6 6" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></svg>Job Finder</div>
+  <div class="logo"><img src="/logo.png" alt="Job Finder" width="269" height="84"></div>
   <div class="ring"><svg width="84" height="84" viewBox="0 0 84 84"><circle class="bg" cx="42" cy="42" r="38"/><circle class="fg" cx="42" cy="42" r="38"/></svg><div class="num" id="splashn">3</div></div>
   <div class="msg" id="splashm">Finding open roles for you…</div>
 </div>
@@ -84,7 +91,7 @@ window.hideSplash=function(){clearInterval(window.__splash);var e=document.getEl
 setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},20000)})();</script>
 
 <div class="wrap">
-  <h1>Job Finder</h1>
+  <h1 class="brand"><img src="/logo.png" alt="Job Finder" width="198" height="62"></h1>
   <div class="filters">
     <select id="fdomain"><option value="">All domains</option></select>
     <select id="frole"><option value="">All roles</option><option value="Product management">Product management</option><option value="Software engineering">Software engineering</option><option value="Data engineering">Data engineering, ML &amp; BI</option><option value="Technical program management">Technical program management</option><option value="Program management">Program management</option><option value="UX design">UX design</option><option value="Human resources">Human resources</option><option value="Legal">Legal</option><option value="Financial analyst">Financial analyst</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option></select>
