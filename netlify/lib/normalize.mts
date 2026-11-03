@@ -146,6 +146,23 @@ export function annualPay(min: any, max: any, interval: string): { min: number; 
   if (a < 15000 || b > 5_000_000 || b < a) return null;
   return { min: Math.round(a), max: Math.round(b) };
 }
+// Finds a posted USD pay range in free text ("The base pay range is $150,000 - $200,000"). Returns null when there is no clear range.
+export function payFromText(text: string): { salary_min: number; salary_max: number; salary_cur: string } | null {
+  if (!text) return null;
+  const t = String(text).replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ");
+  const re = /\$\s?(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])\b/g;
+  const amt = (x: string) => /k$/i.test(x.trim()) ? parseFloat(x) * 1000 : parseFloat(x.replace(/,/g, ""));
+  const hits: { i: number; end: number; v: number }[] = []; let m: RegExpExecArray | null;
+  while ((m = re.exec(t))) hits.push({ i: m.index, end: m.index + m[0].length, v: amt(m[1]) });
+  for (let k = 0; k + 1 < hits.length; k++) {
+    const a = hits[k], b = hits[k + 1];
+    if (b.i - a.end > 140 || a.v < 30000 || b.v <= a.v || b.v > a.v * 4 || b.v > 3_000_000) continue;
+    if (/\b(per hour|hourly|\/hr|\/hour)\b/i.test(t.slice(a.end, b.end + 30))) continue;
+    if (!/(salary|pay|compensation|base|range|earn|wage)/i.test(t.slice(Math.max(0, a.i - 400), a.i + 20))) continue;
+    return { salary_min: Math.round(a.v), salary_max: Math.round(b.v), salary_cur: "USD" };
+  }
+  return null;
+}
 export function seniority(title: string): string {
   const t = (title || "").toLowerCase();
   for (const [label, re] of SENIORITY_RULES) if (re.test(t)) return label;
