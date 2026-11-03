@@ -427,34 +427,19 @@ function vaia(name: string, page: string): Reader {
   } };
 }
 
-// ByteDance careers (joinbytedance.com): the site's own search API, which needs a CSRF cookie from the first page load.
-function bytedance(name: string, origin: string): Reader {
-  const UA = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", "accept-language": "en-US,en;q=0.9" };
+// ByteDance careers (joinbytedance.com): the public search API the site itself calls.
+function bytedance(name: string, origin: string, cap = 1500): Reader {
+  const post = (offset: number) => jget("https://jobs.bytedance.com/api/v1/public/supplier/search/job/posts", { method: "POST", headers: { "content-type": "application/json", "accept-language": "en-US", "website-path": "en", "x-tt-env": "boe_epam_api", origin }, body: JSON.stringify({ recruitment_id_list: [], job_category_id_list: [], subject_id_list: [], location_code_list: [], keyword: "", limit: 50, offset }) });
   return { name, run: async () => {
-    const home = await fetch(`${origin}/search`, { headers: UA, signal: AbortSignal.timeout(14000) });
-    const cookies = ((home.headers as any).getSetCookie?.() || []) as string[];
-    const jar = cookies.map(c => c.split(";")[0]).join("; ");
-    const csrf = /atsx-csrf-token=([^;]+)/.exec(jar)?.[1] || "";
-    const post = async (offset: number, keyword: string) => {
-      const r = await fetch(`${origin}/api/v1/search/job/posts?keyword=${encodeURIComponent(keyword)}&limit=50&offset=${offset}&job_category_id_list=&tag_id_list=&location_code_list=&subject_id_list=&recruitment_id_list=&portal_type=2&job_function_id_list=&portal_entrance=1`, {
-        method: "POST", signal: AbortSignal.timeout(14000),
-        headers: { ...UA, "content-type": "application/json", accept: "application/json", cookie: jar, "x-csrf-token": decodeURIComponent(csrf), origin, referer: `${origin}/search` },
-        body: JSON.stringify({ keyword, limit: 50, offset, job_category_id_list: [], tag_id_list: [], location_code_list: [], subject_id_list: [], recruitment_id_list: [], portal_type: 2, job_function_id_list: [], portal_entrance: 1 }),
-      });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      return r.json();
-    };
-    const seen = new Map<string, RawJob>();
-    for (const kw of QUERIES) {
-      for (let off = 0; off < 300; off += 50) {
-        const j = await post(off, kw);
-        const list = j?.data?.job_post_list || [];
-        for (const x of list) seen.set(String(x.id), { company: name, title: x.title, location: [x.city_info?.name, x.city_info?.parent?.name].filter(Boolean).join(", ") || x.city_info?.en_name || "", department: x.job_category?.name || "", url: `${origin}/search/${x.id}`, posted: x.publish_time ? new Date(+x.publish_time).toISOString() : null });
-        if (list.length < 50) break;
-      }
-    }
-    if (!seen.size) throw new Error("no results");
-    return { raw: [...seen.values()] };
+    const first = await post(0);
+    const total = Math.min(Number(first?.data?.count || 0), cap);
+    if (!first?.data?.job_post_list) throw new Error("no data");
+    const rest = await pool(range(50, total, 50), 5, post);
+    const raw: RawJob[] = [first, ...rest].flatMap(p => p?.data?.job_post_list || []).map((x: any) => {
+      const c = x.city_info || {}; const loc = [c.en_name, c.parent?.en_name, c.parent?.parent?.en_name].filter(Boolean);
+      return { company: name, title: x.title, location: loc.join(", "), department: x.job_category?.en_name || "", url: `${origin}/search/${x.id}`, posted: null };
+    });
+    return { raw };
   } };
 }
 
@@ -547,6 +532,7 @@ export const BIG: Reader[] = [
   taleo("Costco", "phf.tbe.taleo.net", "COSTCO", "41"),
   jibe("McAfee", "https://careers.mcafee.com"),
   vaia("RedNote", "https://talents.vaia.com/companies/rednote/"),
+  bytedance("ByteDance", "https://joinbytedance.com"),
 ];
 
 export async function crawlBig(i: number) {
