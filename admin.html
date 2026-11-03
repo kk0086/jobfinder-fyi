@@ -51,12 +51,13 @@ async function load(){
   $("chart").innerHTML=d.daily.map(x=>`<i style="height:${x.visitors/mx*100}%" title="${x.d}: ${x.visitors} visitors, ${x.sessions} visits"></i>`).join("");
   $("axis").innerHTML=`<span>${d.daily[0].d}</span><span>${d.daily[d.daily.length-1].d}</span>`;
   const list=(h,a)=>`<div class="card"><h2>${h}</h2>${a.length?a.map(([k,n])=>`<div class="row"><span title="${esc(k)}">${esc(k)}</span><span>${n}</span></div>`).join(""):'<div class="sub">No data yet</div>'}</div>`;
-  const FL={fdomain:"Domain",frole:"Role",fc:"Company",fs:"State",fd:"Department",fl:"Seniority",fr:"Remote",ffit:"Senior only"};
+  const FL={fdomain:"Domain",frole:"Role",fc:"Company",fs:"State",fcn:"Country",chip:"Quick pick",fl:"Seniority",fr:"Remote",ffit:"Senior only"};
   const flt=(d.filters||[]).map(([k,n])=>{const i=k.indexOf(":");return [(FL[k.slice(0,i)]||k.slice(0,i))+": "+k.slice(i+1),n]});
   const u=d.usage||{},pc=x=>t.sessions?Math.round(x/t.sessions*100)+"%":"0%";
   const hrs=d.hours||[],hm=Math.max(1,...hrs.map(x=>x[1])),wd=d.weekdays||[],wm=Math.max(1,...wd.map(x=>x[1]));
   const bars=(h,a,m)=>`<div class="card"><h2>${h}</h2><div class="chart" style="height:70px">${a.map(([k,n])=>`<i style="height:${n/m*100}%" title="${k}: ${n}"></i>`).join("")}</div><div class="sub" style="display:flex;justify-content:space-between;margin:4px 0 0"><span>${a[0][0]}</span><span>${a[a.length-1][0]}</span></div></div>`;
   $("grid").innerHTML=list("Cities",d.cities||[])+list("Countries",d.countries)+list("Regions / states",d.regions||[])+list("Devices",d.devices)+list("Browsers",d.browsers||[])+list("Operating systems",d.systems||[])+list("Languages",d.languages||[])+list("Screen sizes",d.screens||[])+list("Referrers",d.referrers)+list("Campaigns (utm)",d.campaigns||[])+list("Landing pages",d.landing||[])+bars("Visits by hour (visitor local time)",hrs,hm)+bars("Visits by weekday",wd,wm)+`<div class="card"><h2>Engagement</h2><div class="row"><span>Used a filter</span><span>${pc(u.usedFilters||0)}</span></div><div class="row"><span>Used search</span><span>${pc(u.usedSearch||0)}</span></div><div class="row"><span>Went past page 1</span><span>${pc(u.pagedDeep||0)}</span></div></div>`+list("Filters used",flt)+list("Searches typed",d.searches||[])+list("Most clicked companies",d.topCompanies)+list("Most clicked jobs",d.topJobs);
+  [["Filters used","filter"],["Searches typed","search"],["Most clicked companies","click"],["Most clicked jobs","click"]].forEach(([h,k])=>{const e=[...$("grid").querySelectorAll("h2")].find(x=>x.textContent===h);if(e&&!e.querySelector("button")){const b=document.createElement("button");b.textContent="Download CSV";b.style.cssText="float:right;font-size:12px;padding:3px 8px";b.onclick=()=>exportEvents(k,b);e.appendChild(b)}});
   $("recent").innerHTML="<tr><th>When</th><th>Where</th><th>Device</th><th>Browser</th><th>Source</th><th>Time</th><th>Views</th><th>Clicks</th><th></th></tr>"+d.recent.map(s=>`<tr><td>${ago(s.when)}</td><td>${esc([s.city,s.region,s.country].filter(Boolean).join(", ")||"—")}</td><td>${s.device}${s.os?" · "+esc(s.os):""}</td><td>${esc(s.browser||"—")}</td><td>${esc(s.ref||"Direct")}</td><td>${dur(s.active)}</td><td>${s.views}</td><td>${s.clicks}</td><td>${s.returning?"returning":"new"}</td></tr>`).join("");
   window.__nb=(d.refresh||[]).length||87;const R=d.refresh||[],done=R.filter(r=>r.at),last=done.length?new Date(Math.max(...done.map(r=>+new Date(r.at)))):null,fails=done.flatMap(r=>r.failed);
   $("refsum").innerHTML=(done.length?`${done.length} of ${R.length} batches have run; most recent ${last.toLocaleString()}. ${done.reduce((n,r)=>n+r.roles,0).toLocaleString()} roles from ${done.reduce((n,r)=>n+r.companies,0)} company job boards.`:"No refresh has run yet. It runs automatically every morning (about 6 AM Pacific).")+(fails.length?` <b>${fails.length} boards failed on the last run:</b> ${esc(fails.slice(0,8).join(", "))}${fails.length>8?"…":""}`:"");
@@ -79,5 +80,21 @@ async function exportVisits(fmt){const bs=[$("exCsv"),$("exJson")];bs.forEach(b=
    blob=new Blob(["\ufeff"+[cols.join(",")].concat(all.map(v=>cols.map(c=>cell(c,v[c])).join(","))).join("\r\n")],{type:"text/csv"});name=`jobfinder-visits-${stamp}.csv`}
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);m.textContent=`Downloaded ${all.length} visits from ${days.length} days.`;
  }catch(e){m.textContent=String(e.message||e)}finally{bs.forEach(b=>b.disabled=false)}}
+async function fetchAll(m){const H={"x-admin-key":KEY};const ix=await fetch("/api/export?index=1",{headers:H,cache:"no-store"});if(!ix.ok)throw new Error("Could not list days ("+ix.status+")");const days=(await ix.json()).days,all=[];
+ for(let i=0;i<days.length;i++){m.textContent=`Reading ${days[i]} (${i+1} of ${days.length})…`;const r=await fetch("/api/export?day="+days[i],{headers:H,cache:"no-store"});if(!r.ok)throw new Error(days[i]+" failed ("+r.status+")");all.push(...(await r.json()).visits)}
+ all.sort((a,b)=>a.start-b.start);return all}
+const FLN={freg:"Region",fdomain:"Domain",frole:"Role",fc:"Company",fs:"State",fcn:"Country",chip:"Quick pick",fl:"Seniority",fr:"Remote",ffit:"Senior only",fd:"Department"};
+async function exportEvents(kind,btn){const m=$("exMsg");const old=btn.textContent;btn.disabled=true;btn.textContent="Preparing…";
+ try{const all=await fetchAll(btn);const rows=[];
+  for(const v of all){const base=[v.start?new Date(v.start).toISOString():"",v.sid||"",v.vid||"",v.country||"",v.region||"",v.city||"",v.device||""];
+   if(kind==="search")(v.q||[]).forEach(q=>rows.push(base.concat([q])));
+   else if(kind==="filter")(v.f||[]).forEach(f=>{const i=f.indexOf(":");const id=f.slice(0,i);rows.push(base.concat([FLN[id]||id,f.slice(i+1)]))});
+   else (v.clicks||[]).forEach(c=>rows.push(base.concat([c.co||"",c.t||""])))}
+  const head=["visit_start","session","visitor","country","region","city","device"].concat(kind==="search"?["search_term"]:kind==="filter"?["filter","value"]:["company","job_title"]);
+  const cell=v=>{v=String(v==null?"":v);if(/^[=+\-@\t\r]/.test(v))v="'"+v;return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const blob=new Blob(["\ufeff"+[head.join(",")].concat(rows.map(r=>r.map(cell).join(","))).join("\r\n")],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`jobfinder-${kind==="click"?"job-clicks":kind==="search"?"searches":"filters"}-${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  btn.textContent=`Downloaded ${rows.length}`;setTimeout(()=>{btn.textContent=old},3000)}
+ catch(e){btn.textContent=old;m.textContent=String(e.message||e)}finally{btn.disabled=false}}
 $("exCsv").onclick=()=>exportVisits("csv");$("exJson").onclick=()=>exportVisits("json");
 </script></body></html>
