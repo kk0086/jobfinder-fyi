@@ -545,6 +545,7 @@ export const BIG: Reader[] = [
   jibe("McAfee", "https://careers.mcafee.com"),
   vaia("RedNote", "https://talents.vaia.com/companies/rednote/"),
   bytedance("ByteDance", "https://joinbytedance.com"),
+  workday("DraftKings", "draftkings.wd1.myworkdayjobs.com", "draftkings", "DraftKings"),
 ];
 
 export async function crawlBig(i: number) {
