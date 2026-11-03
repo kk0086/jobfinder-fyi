@@ -1,4 +1,4 @@
-import { normalizeJob, annualPay, type Job, type RawJob } from "./normalize.mts";
+import { normalizeJob, annualPay, payFromText, type Job, type RawJob } from "./normalize.mts";
 import { getStore } from "@netlify/blobs";
 import feeds from "./feeds.json" with { type: "json" };
 
@@ -79,7 +79,11 @@ async function ghPay(slug: string, id: any) {
   const j = await getJson(`https://boards-api.greenhouse.io/v1/boards/${slug}/jobs/${id}?pay_transparency=true`, 8000);
   const r = (j.pay_input_ranges || []).find((r: any) => r.min_cents > 0);
   const p = r && annualPay(r.min_cents / 100, (r.max_cents || r.min_cents) / 100, "year");
-  return p ? { min: p.min, max: p.max, cur: r.currency_type || "USD" } : null;
+  if (p) return { min: p.min, max: p.max, cur: r.currency_type || "USD" };
+  // Many employers leave the structured range empty and state pay in the description instead.
+  const text = String(j.content || "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/<[^>]*>/g, " ").replace(/&nbsp;|&#39;|&quot;/g, " ").replace(/\s+/g, " ");
+  const t = payFromText(text);
+  return t?.salary_min ? { min: t.salary_min, max: t.salary_max || t.salary_min, cur: t.salary_cur || "USD" } : null;
 }
 
 export type CompanyResult = { name: string; ok: boolean; total: number; kept: number; error?: string };
@@ -126,7 +130,7 @@ export async function crawlChunk(chunk: number, budgetMs = 24000, prevJobs: any[
       if (!j.gh_id || j.salary_min) continue;
       const o = old.get(j.url);
       if (o?.salary_min) { j.salary_min = o.salary_min; j.salary_max = o.salary_max; j.salary_cur = o.salary_cur; j.sal_at = o.sal_at; continue; }
-      if (o?.sal_at && Date.parse(o.sal_at) > week) { j.sal_at = o.sal_at; continue; }
+      if (o?.sal_at && o.sal_v === 2 && Date.parse(o.sal_at) > week) { j.sal_at = o.sal_at; j.sal_v = 2; continue; }
       todo.push(j);
     }
     todo.sort((a: any, b: any) => (GH_PRIORITY[a.seniority] ?? 2) - (GH_PRIORITY[b.seniority] ?? 2));
@@ -137,7 +141,7 @@ export async function crawlChunk(chunk: number, budgetMs = 24000, prevJobs: any[
         if (!slug) continue;
         try {
           const p = await ghPay(slug, j.gh_id);
-          j.sal_at = new Date().toISOString();
+          j.sal_at = new Date().toISOString(); j.sal_v = 2;
           if (p) { j.salary_min = p.min; j.salary_max = p.max; j.salary_cur = p.cur; }
         } catch {}
       }
