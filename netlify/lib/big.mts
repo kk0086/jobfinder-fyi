@@ -490,6 +490,7 @@ export const BIG: Reader[] = [
   ADZUNA,
   SHOPIFY,
   taleo("Costco", "phf.tbe.taleo.net", "COSTCO", "41"),
+  jibe("McAfee", "https://careers.mcafee.com"),
 ];
 
 export async function crawlBig(i: number) {
