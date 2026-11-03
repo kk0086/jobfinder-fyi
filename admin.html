@@ -30,6 +30,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:5px 6px;text-align:left;
 <div class="grid" id="grid"></div>
 <div class="card" id="refcard" style="margin-top:12px"><h2>Live job refresh</h2><div id="refsum" class="sub"></div><button id="refnow">Refresh all companies now</button> <span id="refmsg" class="sub"></span></div>
 <div class="card" id="covcard" style="margin-top:12px"><h2>Job data coverage</h2><div id="covsum" class="sub"></div><details><summary style="cursor:pointer">Coverage by company</summary><div style="overflow:auto;margin-top:8px"><table id="cov"></table></div></details></div>
+<div class="card" style="margin-top:12px"><h2>Export visits</h2><div class="sub">Every stored visit, one row per visit (CSV opens in Excel or Google Sheets).</div><button id="exCsv">Download all visits (CSV)</button> <button id="exJson">Download JSON</button> <span id="exMsg" class="sub"></span></div>
 <div class="card" style="margin-top:12px"><h2>Recent visits</h2><div style="overflow:auto"><table id="recent"></table></div></div>
 </div></div>
 <script>
@@ -67,4 +68,16 @@ $("refnow").onclick=async()=>{const b=$("refnow");b.disabled=true;try{const N=wi
 $("f").onsubmit=e=>{e.preventDefault();KEY=$("k").value;$("e").textContent="";load()};
 $("days").onchange=load;$("rf").onclick=load;$("out").onclick=()=>{try{sessionStorage.removeItem("jfk");localStorage.removeItem("jfk")}catch{};location.reload()};
 if(KEY)load();
+
+async function exportVisits(fmt){const bs=[$("exCsv"),$("exJson")];bs.forEach(b=>b.disabled=true);const m=$("exMsg");
+ try{const H={"x-admin-key":KEY};const ix=await fetch("/api/export?index=1",{headers:H,cache:"no-store"});if(!ix.ok)throw new Error("Could not list days ("+ix.status+")");const days=(await ix.json()).days;if(!days.length){m.textContent="No visits stored yet.";return}
+  const all=[];for(let i=0;i<days.length;i++){m.textContent=`Reading ${days[i]} (${i+1} of ${days.length})…`;const r=await fetch("/api/export?day="+days[i],{headers:H,cache:"no-store"});if(!r.ok)throw new Error(days[i]+" failed ("+r.status+")");all.push(...(await r.json()).visits)}
+  all.sort((a,b)=>a.start-b.start);let blob,name;const stamp=new Date().toISOString().slice(0,10);
+  if(fmt==="json"){blob=new Blob([JSON.stringify(all)],{type:"application/json"});name=`jobfinder-visits-${stamp}.json`}
+  else{const cols=["start","last","sid","vid","active","views","returning","ref","utm","land","device","browser","os","lang","scr","tz","country","region","city","gtz","pg","f","q","clicks"];
+   const cell=(k,v)=>{if(k==="start"||k==="last")v=v?new Date(v).toISOString():"";else if(Array.isArray(v))v=k==="clicks"?v.map(c=>(c.co||"")+": "+(c.t||"")).join(" | "):v.join(" | ");v=v==null?"":String(v);if(/^[=+\-@\t\r]/.test(v))v="'"+v;return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+   blob=new Blob(["\ufeff"+[cols.join(",")].concat(all.map(v=>cols.map(c=>cell(c,v[c])).join(","))).join("\r\n")],{type:"text/csv"});name=`jobfinder-visits-${stamp}.csv`}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);m.textContent=`Downloaded ${all.length} visits from ${days.length} days.`;
+ }catch(e){m.textContent=String(e.message||e)}finally{bs.forEach(b=>b.disabled=false)}}
+$("exCsv").onclick=()=>exportVisits("csv");$("exJson").onclick=()=>exportVisits("json");
 </script></body></html>
