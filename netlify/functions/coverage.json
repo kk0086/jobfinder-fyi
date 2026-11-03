@@ -3250,9 +3250,9 @@
   },
   {
    "name": "RedNote",
-   "ats": "",
-   "status": "unsupported",
-   "note": "no public job feed with US roles found; careers are listed on a China-based site",
+   "ats": "custom/vaia",
+   "status": "partial",
+   "note": "Read from its Vaia Talents page, which exposes only the 10 newest roles",
    "slug": ""
   }
  ],
