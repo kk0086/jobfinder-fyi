@@ -380,6 +380,28 @@ function clinch(name: string, origin: string, path = "/jobs/search"): Reader {
   } };
 }
 
+// Oracle Taleo career sections (for example Costco). The search page is plain HTML; each result row has the job id, title, department and location.
+function taleo(name: string, host: string, org: string, cws: string): Reader {
+  const base = `https://${host}/${host.startsWith("phf") ? "phf02" : "ats"}/ats/careers/v2`;
+  const dec = (t: string) => t.replace(/<[^>]+>/g, "").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n)).replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;/g, "'").replace(/\s+/g, " ").trim();
+  const H = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html,application/xhtml+xml", "accept-language": "en-US,en;q=0.9" };
+  const rows = async (extra: string): Promise<RawJob[]> => {
+    const r = await fetch(`${base}/searchResults?org=${org}&cws=${cws}${extra}`, { signal: AbortSignal.timeout(14000), headers: H });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const h = await r.text(); const out: RawJob[] = [];
+    const re = /rid=(\d+)"\s+class="viewJobLink">([\s\S]*?)<\/a>\s*<\/h4>\s*<div[^>]*>([\s\S]*?)<\/div>\s*<div[^>]*>([\s\S]*?)<\/div>/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(h))) out.push({ company: name, title: dec(m[2]), location: dec(m[4]), department: dec(m[3]).replace(/^\d+\s*-\s*/, ""), url: `${base}/viewRequisition?org=${org}&cws=${cws}&rid=${m[1]}`, posted: null });
+    return out;
+  };
+  return { name, run: async () => {
+    const seen = new Map<string, RawJob>();
+    (await rows("")).forEach(x => seen.set(x.url, x));
+    if (!seen.size) throw new Error("no results");
+    return { raw: [...seen.values()] };
+  } };
+}
+
 // Adzuna job search (second source for companies we do not read directly). Needs ADZUNA_APP_ID and ADZUNA_APP_KEY.
 const ADZUNA_QUERIES = ["product manager", "senior product manager", "principal product manager", "director product management", "trust and safety", "technical program manager", "software engineer", "data scientist"]; // 8 queries x 3 pages = 24 calls per run (free tier is 25)
 const ADZUNA: Reader = { name: "Adzuna search", run: async () => {
@@ -422,7 +444,7 @@ const SHOPIFY: Reader = { name: "Shopify", run: async () => {
   return { raw: out };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch"; name: string; [k: string]: any };
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -434,6 +456,7 @@ export function fromSpec(s: Spec): Reader {
     case "smartrecruiters": return smartrecruiters(s.name, s.id);
     case "builtin": { const b = BIG.find(x => x.name === s.name); if (!b) throw new Error("not found"); return b; }
     case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
+    case "taleo": return taleo(s.name, s.host, s.org, String(s.cws));
     case "phenom": return phenom(s.name, s.origin, s.locale || "us/en");
   }
   throw new Error("unknown kind");
@@ -463,6 +486,7 @@ export const BIG: Reader[] = [
   NIKE,
   ADZUNA,
   SHOPIFY,
+  taleo("Costco", "phf.tbe.taleo.net", "COSTCO", "41"),
 ];
 
 export async function crawlBig(i: number) {
