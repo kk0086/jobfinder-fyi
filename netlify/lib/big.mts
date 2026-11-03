@@ -272,7 +272,7 @@ function jibePay(d: any) {
   if (p) return { salary_min: p.min, salary_max: p.max, salary_cur: String(d.salary_currency || "USD") };
   return payFromText([d.description, d.responsibilities, d.qualifications, d.compensation].filter(Boolean).join(" ")) || {};
 }
-function jibe(name: string, origin: string): Reader {
+function jibe(name: string, origin: string, all = false): Reader {
   return { name, run: async () => {
     const get = (p: number) => jget(`${origin}/api/jobs?page=${p}&limit=100&sortBy=posted_date&descending=true`);
     const first = await get(1);
@@ -283,7 +283,7 @@ function jibe(name: string, origin: string): Reader {
       location: d.full_location || d.location_name || [d.city, d.state].filter(Boolean).join(", "), country: d.country_code || d.country,
       url: d.apply_url ? String(d.apply_url).replace(/\/apply.*$/, "") : `${origin}/jobs/${d.slug || d.req_id}`, posted: d.posted_date || d.create_date || null,
       ...jibePay(d),
-    })).filter((r: any) => !r.country || /^(US|USA|United States)/i.test(r.country));
+    })).filter((r: any) => all || !r.country || /^(US|USA|United States)/i.test(r.country));
     return { raw };
   } };
 }
@@ -504,7 +504,7 @@ export function fromSpec(s: Spec): Reader {
     case "oracle": return oracle(s.name, s.host, s.site);
     case "radancy": return radancy(s.name, s.origin, s.prefix || "", String(s.org));
     case "eightfold": return eightfold(s.name, s.host, s.domain, s.careersBase, s.queries || QUERIES, s.pagesPer || 30);
-    case "jibe": return jibe(s.name, s.origin);
+    case "jibe": return jibe(s.name, s.origin, !!s.all);
     case "clinch": return clinch(s.name, s.origin, s.path || "/jobs/search");
     case "smartrecruiters": return smartrecruiters(s.name, s.id);
     case "builtin": { const b = BIG.find(x => x.name === s.name); if (!b) throw new Error("not found"); return b; }
@@ -546,6 +546,7 @@ export const BIG: Reader[] = [
   vaia("RedNote", "https://talents.vaia.com/companies/rednote/"),
   bytedance("ByteDance", "https://joinbytedance.com"),
   workday("DraftKings", "draftkings.wd1.myworkdayjobs.com", "draftkings", "DraftKings"),
+  workday("Priceline", "priceline.wd1.myworkdayjobs.com", "priceline", "Priceline"),
 ];
 
 export async function crawlBig(i: number) {

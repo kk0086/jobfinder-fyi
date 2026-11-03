@@ -207,8 +207,9 @@
 },
 {
 "kind": "jibe",
-"name": "Booking Holdings",
-"origin": "https://jobs.booking.com"
+"name": "Booking.com",
+"origin": "https://jobs.booking.com",
+"all": true
 },
 {
 "kind": "workday",

@@ -598,10 +598,16 @@
    "note": "read automatically every morning, all role families"
   },
   {
-   "name": "Booking Holdings",
+   "name": "Booking.com",
    "ats": "",
    "status": "ok",
-   "note": "read automatically every morning, all role families"
+   "note": "read automatically every morning (jobs.booking.com), US and international roles"
+  },
+  {
+   "name": "Priceline",
+   "ats": "workday",
+   "status": "ok",
+   "note": "read automatically every morning (Workday), US roles"
   },
   {
    "name": "Tripadvisor",
