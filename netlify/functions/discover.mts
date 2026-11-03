@@ -67,6 +67,31 @@ export default async (req: Request) => {
     await store.setJSON("registry", reg);
     return Response.json({ added, dupe, registry: reg.length });
   }
+  // Vaia Talents sitemap scan (owner tool): which companies on that board have roles in our job families.
+  //  {action:"vindex"}                 -> child sitemaps grouped by name pattern
+  //  {action:"vscan", urls:[...]}      -> per company: matching role count and sample titles, read from the job URL slugs
+  if (b.action === "vindex" || b.action === "vscan") {
+    const UA = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36" };
+    if (b.action === "vindex") {
+      const x = await fetch("https://talents.vaia.com/jobs-sp-one-sitemap.xml", { headers: UA, signal: AbortSignal.timeout(24000) }).then(r => r.text());
+      const locs = [...x.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
+      const groups: Record<string, { n: number; first: string; last: string }> = {};
+      for (const u of locs) { const g = u.replace(/^https:\/\/talents\.vaia\.com\//, "").replace(/-\d+\.xml$/, ""); const e = groups[g] || (groups[g] = { n: 0, first: u, last: u }); e.n++; e.last = u; }
+      return Response.json({ total: locs.length, groups });
+    }
+    const cos: Record<string, { n: number; titles: string[] }> = {};
+    await pool<string, void>(b.urls as string[], 6, async u => {
+      try {
+        const t = await fetch(u, { headers: UA, signal: AbortSignal.timeout(20000) }).then(r => r.text());
+        for (const m of t.matchAll(/<loc>https:\/\/talents\.vaia\.com\/companies\/([a-z0-9-]+)\/(?:[a-z0-9-]+\/)?([^\/<]+?)-(\d{6,})\/<\/loc>/g)) {
+          const title = decodeURIComponent(m[2]).replace(/-/g, " ");
+          if (!normalizeJob({ company: m[1], title, location: "", department: "", url: m[0] }, { assumeUS: true })) continue;
+          const e = cos[m[1]] || (cos[m[1]] = { n: 0, titles: [] }); e.n++; if (e.titles.length < 3) e.titles.push(title.slice(0, 70));
+        }
+      } catch {}
+    });
+    return Response.json({ cos });
+  }
   return new Response("bad action", { status: 400 });
 };
 export const config: Config = { path: "/api/discover", method: ["POST"] };
