@@ -211,7 +211,7 @@ export function inferDepartment(title: string): string {
 // ---- Role families -------------------------------------------------------
 export const FAMILIES = [
   "Product management", "Software engineering", "Data engineering", "Technical program management", "Program management",
-  "UX design", "Human resources", "Legal", "Financial analyst", "Marketing", "Operations",
+  "UX design", "Human resources", "Legal", "Financial analyst", "Bizdev", "Marketing", "Operations",
 ] as const;
 
 const PRODUCT_TITLE = /\b(product (manager|management|lead|owner)|(director|head|vp|vice president|group|principal|staff|senior|sr\.?)( technical)?( of)? product\b)/i;
@@ -228,7 +228,8 @@ export function roleFamily(title: string, department: string): string | null {
   if (/\b(counsel|attorney|legal|paralegal|compliance|regulatory|litigation|contracts? (manager|specialist|counsel)|general counsel|privacy counsel|ip counsel|policy counsel)\b/.test(t) && !/\b(policy (manager|lead|analyst|operations)|trust|safety)\b/.test(t)) return "Legal";
   if (/\b(financial|finance|fp&a|accountant|accounting|controller|treasury|tax|audit|revenue accounting|business finance|strategic finance|investment analyst|payroll)\b/.test(t)) return "Financial analyst";
   if (/\b(recruit|recruiter|talent acquisition|talent partner|sourcer|human resources|\bhr\b|hrbp|people partner|people business partner|people operations|people partner|total rewards|compensation|benefits (manager|specialist|analyst)|learning (and|&) development|employee experience|people experience|workforce planning|diversity|dei\b)/.test(t)) return "Human resources";
-  if (/\b(marketing|brand|growth|seo|sem\b|content (strategist|marketing|lead|manager|writer)|communications|public relations|\bpr\b|demand gen|lifecycle|community manager|social media|influencer|copywriter|creative (director|producer)|editorial|events? marketing|field marketing|partner marketing)\b/.test(t)) return "Marketing";
+  if ((/\b(business development|biz ?dev|bd (manager|lead|director|associate|partner|head)|partnerships?|partner (manager|lead|director|development|success|alliances?)|alliances?|channel (manager|partner|lead|director|sales)|corporate development|corp dev|growth|strategic (partner|alliance)|ecosystem (manager|lead|partner)|market development|licensing)\b/.test(t) || /^(business development|biz ?dev|partnerships?|alliances?)$/i.test(department || "")) && !/\b(marketing|recruit|recruiter|counsel|attorney|legal|engineer|developer|designer|analyst intern)\b/.test(t)) return "Bizdev";
+  if (/\b(marketing|brand|growth marketer|seo|sem\b|content (strategist|marketing|lead|manager|writer)|communications|public relations|\bpr\b|demand gen|lifecycle|community manager|social media|influencer|copywriter|creative (director|producer)|editorial|events? marketing|field marketing|partner marketing)\b/.test(t)) return "Marketing";
   if (/\b(operations|operator|business operations|biz ?ops|supply chain|logistics|ops (manager|lead|analyst|specialist)|chief of staff|fulfillment|procurement|facilities|workplace|program operations|strategy (and|&) operations|revenue operations|sales operations|trust (and|&) safety operations|support operations|operations (manager|analyst|lead|associate|specialist|director))\b/.test(t)) return "Operations";
   return null;
 }
