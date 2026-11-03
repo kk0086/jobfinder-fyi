@@ -8,7 +8,7 @@ export default async (req: Request) => {
   const c = +(new URL(req.url).searchParams.get("chunk") ?? -1);
   if (!(c >= 0 && c < TOTAL_BATCHES)) return Response.json({ error: "chunk must be 0.." + (TOTAL_BATCHES - 1) }, { status: 400 });
   const r = await runChunk(c);
-  await jobsPayload(true);
+  await jobsPayload("us", true);
   return Response.json(r, { headers: { "cache-control": "no-store" } });
 };
 export const config: Config = { path: "/api/refresh", method: ["POST"] };

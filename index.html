@@ -91,7 +91,7 @@ dialog#cd::backdrop{background:rgba(0,0,0,.45)}
 #cd .row button:disabled{opacity:.6;cursor:default}
 #cd .msg2{margin-top:12px;font-size:14px;min-height:1.2em}
 </style>
-<script>window.__jp=fetch("/api/jobs").then(function(r){return r.ok?r.json():null}).catch(function(){return null});</script>
+<script>window.__rg=(function(){var m=/[?&]region=(us|ca|uk|ie|emea)\b/.exec(location.search);return m?m[1]:"us"})();window.__jp=fetch("/api/jobs"+(window.__rg==="us"?"":"?region="+window.__rg)).then(function(r){return r.ok?r.json():null}).catch(function(){return null});</script>
 </head>
 <body>
 <div id="splash" role="status" aria-live="polite">
@@ -107,6 +107,7 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
 <div class="wrap">
   <div class="hd"><h1 class="brand"><img src="/logo.png" alt="Job Finder" width="198" height="62"></h1><p class="slogan">Latest Tech jobs. One Search. Find it before everyone else.</p></div>
   <div class="filters">
+    <select id="freg" aria-label="Region"><option value="us">United States</option><option value="ca">Canada</option><option value="uk">United Kingdom</option><option value="ie">Ireland</option><option value="emea">Europe, Middle East &amp; Africa</option></select>
     <select id="fdomain"><option value="">All domains</option></select>
     <select id="frole"><option value="">All roles</option><option value="Product management">Product management</option><option value="Software engineering">Software engineering</option><option value="Data engineering">Data engineering, ML &amp; BI</option><option value="Technical program management">Technical program management</option><option value="Program management">Program management</option><option value="UX design">UX design</option><option value="Human resources">Human resources</option><option value="Legal">Legal</option><option value="Financial analyst">Financial analyst</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option></select>
     <input id="q" type="search" placeholder="Search title, company, location">
@@ -156,6 +157,7 @@ const prep = j => {
   const p = j.posted ? Date.parse(j.posted) : null, u = j.updated ? Date.parse(j.updated) : null;
   return {...j, ts: p ?? u, tsKind: p ? "Posted" : (u ? "Updated" : "")};
 };
+const RG_LABEL = {us: "US", ca: "Canadian", uk: "UK", ie: "Irish", emea: "EMEA"};
 const FIT = ["Director", "Executive", "Principal+"];
 const DEFAULTS = {company:[], state:"", dept:"", level:"", remote:"", q:"", role:"", domain:"", fit:false};
 const F = {...DEFAULTS, company: []};
@@ -232,7 +234,7 @@ function render() {
   $("fdomain").value = F.domain;
   const week = rows.filter(j => j.ts && NOW - j.ts <= 7 * DAY).length;
   $("tiles").innerHTML = [
-    [rows.length.toLocaleString(), "open US roles (matching)"],
+    [rows.length.toLocaleString(), "open " + (RG_LABEL[window.__rg] || "US") + " roles (matching)"],
     [new Set(rows.map(j => j.company)).size, "companies"],
     [rows.length ? Math.round(rows.filter(j => j.remote).length / rows.length * 100) + "%" : "0%", "remote"],
     [week, "dated in last 7 days"],
@@ -244,7 +246,7 @@ function render() {
   const undated = rows.filter(j => !j.ts).length;
   if (undated) recency.push(["No date", undated]);
   $("charts").innerHTML =
-    bars("By state", count(rows, j => j.states), "state") +
+    bars(window.__rg === "us" ? "By state" : "By country", count(rows, j => j.states), "state") +
     bars("By seniority", count(rows, j => j.seniority), "level") +
     bars("By company", count(rows, j => j.company), "company") +
     `<div class="card"><h2>By recency</h2>${recency.map(([l, n]) => `<div class="bar" style="cursor:default"><span class="l">${l}</span><span class="t"><i style="width:${n / Math.max(1, ...recency.map(r => r[1])) * 100}%"></i></span><span class="n">${n}</span></div>`).join("")}</div>`;
@@ -266,6 +268,9 @@ function render() {
 function init() {
   const when = new Date(DATA.generated_at);
   $("asof").textContent = `Data as of ${isNaN(when) ? "unknown" : when.toLocaleString()} · ${DATA.companyCount ?? DATA.companies.length} companies`;
+  $("freg").value = window.__rg;
+  $("freg").addEventListener("change", e => { location.search = e.target.value === "us" ? "" : "?region=" + e.target.value; });
+  if (window.__rg !== "us") $("fs").firstElementChild.textContent = "All countries";
   msInit(count(jobs, j => j.company));
   fillSelect("fs", count(jobs, j => j.states));
   fillSelect("fd", count(jobs, j => j.department));
@@ -286,7 +291,7 @@ function sync() { $("frole").value = F.role; $("fdomain").value = F.domain; $("f
 async function boot() {
   if (DATA.live) {
     $("list").innerHTML = '<div class="meta">Loading jobs…</div>';
-    try { const j = window.__jp ? await window.__jp : null; if (j) DATA = j; else { const r = await fetch("/api/jobs"); if (!r.ok) throw 0; DATA = await r.json(); } }
+    try { const j = window.__jp ? await window.__jp : null; if (j) DATA = j; else { const r = await fetch("/api/jobs" + (window.__rg === "us" ? "" : "?region=" + window.__rg)); if (!r.ok) throw 0; DATA = await r.json(); } }
     catch (e) { $("list").innerHTML = '<div class="meta">Could not load jobs. Please refresh the page.</div>'; if (window.hideSplash) window.hideSplash(); return; }
   }
   jobs = DATA.jobs.map(prep);
@@ -316,7 +321,7 @@ boot();
   document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")send();else tick=Date.now()});
   addEventListener("pagehide",send);
   document.addEventListener("change",function(e){var t=e.target;if(!t||!t.id)return;
-    if(/^(fdomain|frole|fc|fs|fd|fl|fr|ffit)$/.test(t.id)){var v=t.type==="checkbox"?(t.checked?"on":"off"):t.value;if(v&&S.f.length<40){S.f.push(t.id+":"+String(v).slice(0,60));send()}}
+    if(/^(freg|fdomain|frole|fc|fs|fd|fl|fr|ffit)$/.test(t.id)){var v=t.type==="checkbox"?(t.checked?"on":"off"):t.value;if(v&&S.f.length<40){S.f.push(t.id+":"+String(v).slice(0,60));send()}}
     else if(t.id==="q"){var q=(t.value||"").trim().toLowerCase().slice(0,40);if(q&&S.q.length<12){S.q.push(q);send()}}},true);
   document.addEventListener("click",function(e){if(e.target.closest&&e.target.closest("[data-pg]")){S.pg++;send()}},true);
   document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a.job");if(!a||S.clicks.length>=25)return;

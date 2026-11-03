@@ -52,6 +52,80 @@ export function isUS(location: string): boolean {
   return /^\s*remote\s*$/i.test(loc) || /\bremote\b.*\b(us|america|americas)\b|\b(us|usa)\b.*\bremote\b/i.test(loc);
 }
 
+
+// ---- Non-US regions: Canada, United Kingdom, Ireland and EMEA (Europe, Middle East, Africa) ----
+const COUNTRIES: [string, string, RegExp][] = [
+  ["CA", "Canada", /\b(canada|toronto|vancouver|montreal|montréal|ottawa|calgary|edmonton|winnipeg|quebec|québec|ontario|british columbia|alberta|nova scotia|manitoba|saskatchewan|waterloo, on|mississauga|kitchener)\b/i],
+  ["IE", "Ireland", /\b(ireland|dublin|cork|galway|limerick)\b/i],
+  ["GB", "United Kingdom", /\b(united kingdom|u\.k\.|uk|england|scotland|wales|northern ireland|london|manchester|edinburgh|glasgow|bristol|leeds|birmingham|belfast|cardiff|oxford|reading, uk|great britain)\b/i],
+  ["DE", "Germany", /\b(germany|deutschland|berlin|munich|münchen|hamburg|frankfurt|cologne|köln|stuttgart|düsseldorf|dusseldorf|leipzig|dresden)\b/i],
+  ["FR", "France", /\b(france|paris|lyon|marseille|toulouse|nantes|bordeaux|lille)\b/i],
+  ["NL", "Netherlands", /\b(netherlands|amsterdam|rotterdam|utrecht|eindhoven|the hague|den haag)\b/i],
+  ["ES", "Spain", /\b(spain|españa|madrid|barcelona|valencia|seville|málaga|malaga)\b/i],
+  ["PT", "Portugal", /\b(portugal|lisbon|lisboa|porto)\b/i],
+  ["IT", "Italy", /\b(italy|italia|milan|milano|rome|roma|turin|torino)\b/i],
+  ["BE", "Belgium", /\b(belgium|brussels|antwerp|ghent)\b/i],
+  ["LU", "Luxembourg", /\b(luxembourg)\b/i],
+  ["CH", "Switzerland", /\b(switzerland|zurich|zürich|geneva|basel|lausanne|zug)\b/i],
+  ["AT", "Austria", /\b(austria|vienna|wien|graz|salzburg)\b/i],
+  ["SE", "Sweden", /\b(sweden|stockholm|gothenburg|göteborg|malmö|malmo)\b/i],
+  ["NO", "Norway", /\b(norway|oslo|bergen)\b/i],
+  ["DK", "Denmark", /\b(denmark|copenhagen|københavn|aarhus)\b/i],
+  ["FI", "Finland", /\b(finland|helsinki|espoo|tampere)\b/i],
+  ["IS", "Iceland", /\b(iceland|reykjavik)\b/i],
+  ["PL", "Poland", /\b(poland|warsaw|krakow|kraków|wroclaw|wrocław|gdansk|poznań|poznan)\b/i],
+  ["CZ", "Czechia", /\b(czech republic|czechia|prague|praha|brno)\b/i],
+  ["SK", "Slovakia", /\b(slovakia|bratislava)\b/i],
+  ["HU", "Hungary", /\b(hungary|budapest)\b/i],
+  ["RO", "Romania", /\b(romania|bucharest|cluj|iasi)\b/i],
+  ["BG", "Bulgaria", /\b(bulgaria|sofia)\b/i],
+  ["GR", "Greece", /\b(greece|athens|thessaloniki)\b/i],
+  ["HR", "Croatia", /\b(croatia|zagreb)\b/i],
+  ["RS", "Serbia", /\b(serbia|belgrade)\b/i],
+  ["SI", "Slovenia", /\b(slovenia|ljubljana)\b/i],
+  ["LT", "Lithuania", /\b(lithuania|vilnius|kaunas)\b/i],
+  ["LV", "Latvia", /\b(latvia|riga)\b/i],
+  ["EE", "Estonia", /\b(estonia|tallinn|tartu)\b/i],
+  ["UA", "Ukraine", /\b(ukraine|kyiv|kiev|lviv)\b/i],
+  ["MT", "Malta", /\b(malta)\b/i],
+  ["CY", "Cyprus", /\b(cyprus|nicosia|limassol)\b/i],
+  ["TR", "Türkiye", /\b(turkey|türkiye|turkiye|istanbul|ankara)\b/i],
+  ["IL", "Israel", /\b(israel|tel aviv|tel-aviv|jerusalem|haifa|herzliya)\b/i],
+  ["AE", "United Arab Emirates", /\b(united arab emirates|uae|dubai|abu dhabi)\b/i],
+  ["SA", "Saudi Arabia", /\b(saudi arabia|riyadh|jeddah|ksa)\b/i],
+  ["QA", "Qatar", /\b(qatar|doha)\b/i],
+  ["EG", "Egypt", /\b(egypt|cairo)\b/i],
+  ["ZA", "South Africa", /\b(south africa|johannesburg|cape town|pretoria|durban)\b/i],
+  ["NG", "Nigeria", /\b(nigeria|lagos|abuja)\b/i],
+  ["KE", "Kenya", /\b(kenya|nairobi)\b/i],
+  ["MA", "Morocco", /\b(morocco|casablanca|rabat)\b/i],
+];
+const NAME_OF: Record<string, string> = Object.fromEntries(COUNTRIES.map(([c, n]) => [c, n]));
+// Region words that name no single country ("Remote - EMEA", "Europe").
+const EMEA_WORD = /\b(emea|europe|european union|\beu\b|middle east|africa|dach|nordics?|benelux)\b/i;
+
+// Returns the ISO country code for a non-US location, "EMEA" for region-wide wording, or "" if none is recognised.
+export function countryOf(location: string): string {
+  const loc = location || "";
+  if (/,\s*(ON|BC|QC|AB|NS|MB|SK)\b/.test(loc)) return "CA"; // province codes are case-sensitive ("Remote, On-site" is not Ontario)
+  if (/northern ireland/i.test(loc)) return "GB";
+  for (const [code, , re] of COUNTRIES) if (re.test(loc)) return code;
+  if (EMEA_WORD.test(loc)) return "EMEA";
+  return "";
+}
+export const countryName = (cc: string) => NAME_OF[cc] || "Europe, Middle East & Africa";
+// Which downloadable region a country code belongs to.
+export const regionOf = (cc?: string) => !cc ? "us" : cc === "CA" ? "ca" : cc === "GB" ? "uk" : cc === "IE" ? "ie" : "emea";
+
+
+function explicitUS(loc: string): boolean {
+  if (/\b(united states|usa|u\.s\.a?\.?)\b/i.test(loc)) return true;
+  for (const m of loc.matchAll(/,\s*([A-Z]{2})\b/g)) if (CODES.has(m[1])) return true;
+  const low = loc.toLowerCase();
+  for (const name of Object.keys(STATES)) if (name !== "georgia" && new RegExp(`\\b${esc(name)}\\b`).test(low)) return true;
+  return false;
+}
+
 const SENIORITY_RULES: [string, RegExp][] = [
   ["Executive", /\b(chief|cxo|ceo|cto|cfo|coo|cmo|vp|vice president|svp|evp|head of)\b/],
   ["Director", /\b(director|general manager)\b/],
@@ -145,16 +219,22 @@ export function normalizeJob(j: RawJob, opts: { assumeUS?: boolean } = {}) {
   const dept = (j.department || "").trim();
   const family = roleFamily(j.title, dept);
   if (!family) return null;
-  if (!opts.assumeUS && !isUS(loc)) return null;
+  let cc = "";
+  if (!opts.assumeUS) {
+    const c0 = countryOf(loc);
+    // An explicit US marker (state code or name, "United States") wins; a city name alone ("Cambridge, UK") does not.
+    const nonUS = c0 && (/,\s*(ON|BC|QC|AB|NS|MB|SK)\b/.test(loc) || !explicitUS(loc));
+    if (nonUS) cc = c0; else if (!isUS(loc)) return null;
+  }
   const remote = j.remote != null ? !!j.remote : /\bremote\b/i.test(loc + " " + j.title);
-  let states = findStates(loc);
+  let states = cc ? [countryName(cc)] : findStates(loc);
   if (!states.length) states = remote ? ["Remote (US)"] : ["Unspecified"];
   return {
     company: j.company.trim(), title: j.title.trim(), location: loc, states,
     department: dept || inferDepartment(j.title), department_inferred: !dept,
     role: family, domains: findDomains(j.title, dept), example: false,
     seniority: seniority(j.title), remote, posted: iso(j.posted), updated: iso(j.updated),
-    url: j.url.trim(), salary_min: null, salary_max: null,
+    url: j.url.trim(), salary_min: null, salary_max: null, ...(cc ? { cc } : {}),
   };
 }
 export type Job = NonNullable<ReturnType<typeof normalizeJob>>;

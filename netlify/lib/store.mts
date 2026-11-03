@@ -3,7 +3,7 @@ import { crawlChunk, loadFeeds, FEED_CHUNKS } from "./crawl.mts";
 import { crawlBig, BIG } from "./big.mts";
 
 export const TOTAL_BATCHES = FEED_CHUNKS + BIG.length;
-import type { Job } from "./normalize.mts";
+import { regionOf, type Job } from "./normalize.mts";
 import seed from "./seed.json" with { type: "json" };
 
 type ChunkBlob = { at: string; jobs: Job[]; report: { name: string; ok: boolean; total: number; kept: number; error?: string }[] };
@@ -20,7 +20,8 @@ export async function runChunk(chunk: number) {
   return { chunk, companies: report.length, failed: [...failed], roles: out.jobs.length, at: out.at };
 }
 
-let cache: { t: number; body: Uint8Array } | null = null;
+const cache = new Map<string, { t: number; body: Uint8Array }>();
+export const REGIONS = ["us", "ca", "uk", "ie", "emea"];
 
 export async function loadAll() {
   const store = getStore("feed");
@@ -47,12 +48,16 @@ export async function loadAll() {
   return { jobs: unique, at, blobs };
 }
 
-export async function jobsPayload(force = false) {
-  if (!force && cache && Date.now() - cache.t < 60 * 1000) return cache.body;
+// One gzipped payload per region ("us" is the default; roles without a country code are US).
+export async function jobsPayload(region = "us", force = false) {
+  if (!REGIONS.includes(region)) region = "us";
+  const hit = cache.get(region);
+  if (!force && hit && Date.now() - hit.t < 60 * 1000) return hit.body;
   const { jobs, at } = await loadAll();
+  const rows = jobs.filter(j => regionOf((j as any).cc) === region);
   const { gzipSync } = await import("node:zlib");
   const seedAt = (seed as any).generated_at as string;
-  const body = gzipSync(Buffer.from(JSON.stringify({ generated_at: at || seedAt, seed_at: seedAt, companyCount: (seed as any).companyCount, jobs })));
-  cache = { t: Date.now(), body };
+  const body = gzipSync(Buffer.from(JSON.stringify({ generated_at: at || seedAt, seed_at: seedAt, region, companyCount: new Set(rows.map(j => j.company)).size, jobs: rows })));
+  cache.set(region, { t: Date.now(), body });
   return body;
 }
