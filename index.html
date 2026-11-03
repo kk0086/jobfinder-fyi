@@ -91,7 +91,11 @@ dialog#cd::backdrop{background:rgba(0,0,0,.45)}
 #cd .row button:disabled{opacity:.6;cursor:default}
 #cd .msg2{margin-top:12px;font-size:14px;min-height:1.2em}
 </style>
-<script>window.__rg=(function(){var m=/[?&]region=(us|ca|uk|ie|emea)\b/.exec(location.search);return m?m[1]:"us"})();window.__jp=fetch("/api/jobs"+(window.__rg==="us"?"":"?region="+window.__rg)).then(function(r){return r.ok?r.json():null}).catch(function(){return null});</script>
+<script>window.__rg=(function(){var m=/[?&]region=(all|us|ca|uk|ie|emea)\b/.exec(location.search);return m?m[1]:"all"})();
+window.__load=function(rg){var one=function(r){return fetch("/api/jobs"+(r==="us"?"":"?region="+r)).then(function(x){return x.ok?x.json():null}).catch(function(){return null})};
+if(rg!=="all")return one(rg);
+return Promise.all(["us","ca","uk","ie","emea"].map(one)).then(function(a){if(!a[0])return null;var jobs=[],at="",cs={};a.forEach(function(d){if(!d)return;if(d.generated_at>at)at=d.generated_at;d.jobs.forEach(function(j){jobs.push(j);cs[j.company]=1})});return{generated_at:at,seed_at:a[0].seed_at,companyCount:Object.keys(cs).length,jobs:jobs}})};
+window.__jp=window.__load(window.__rg);</script>
 </head>
 <body>
 <div id="splash" role="status" aria-live="polite">
@@ -107,12 +111,13 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
 <div class="wrap">
   <div class="hd"><h1 class="brand"><img src="/logo.png" alt="Job Finder" width="198" height="62"></h1><p class="slogan">Latest Tech jobs. One Search. Find it before everyone else.</p></div>
   <div class="filters">
-    <select id="freg" aria-label="Region"><option value="us">United States</option><option value="ca">Canada</option><option value="uk">United Kingdom</option><option value="ie">Ireland</option><option value="emea">Europe, Middle East &amp; Africa</option></select>
+    <select id="freg" aria-label="Region"><option value="all">All regions</option><option value="us">United States</option><option value="ca">Canada</option><option value="uk">United Kingdom</option><option value="ie">Ireland</option><option value="emea">Europe, Middle East &amp; Africa</option></select>
     <select id="fdomain"><option value="">All domains</option></select>
     <select id="frole"><option value="">All roles</option><option value="Product management">Product management</option><option value="Software engineering">Software engineering</option><option value="Data engineering">Data engineering, ML &amp; BI</option><option value="Technical program management">Technical program management</option><option value="Program management">Program management</option><option value="UX design">UX design</option><option value="Human resources">Human resources</option><option value="Legal">Legal</option><option value="Financial analyst">Financial analyst</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option></select>
     <input id="q" type="search" placeholder="Search title, company, location">
     <div class="ms" id="fcw"><button type="button" id="fcb"><span id="fcl">All companies</span><span>▾</span></button><input type="hidden" id="fc"><div class="pn"><input type="search" id="fcs" placeholder="Search companies"><div class="ls" id="fcls"></div><div class="ft"><a id="fcclr">Clear</a><a id="fcdone">Done</a></div></div></div>
     <select id="fs"><option value="">All states</option></select>
+    <select id="fcn"><option value="">All countries</option></select>
     <select id="fd"><option value="">All departments</option></select>
     <select id="fl"><option value="">All seniority</option></select>
     <select id="fr"><option value="">Remote + onsite</option><option value="1">Remote only</option><option value="0">Onsite only</option></select>
@@ -155,11 +160,11 @@ let jobs = [];
 const prep = j => {
   // Prefer a true posting date; fall back to last-updated, flagged so the UI can say so.
   const p = j.posted ? Date.parse(j.posted) : null, u = j.updated ? Date.parse(j.updated) : null;
-  return {...j, ts: p ?? u, tsKind: p ? "Posted" : (u ? "Updated" : "")};
+  return {...j, ctry: j.cc ? j.states[0] : "United States", ts: p ?? u, tsKind: p ? "Posted" : (u ? "Updated" : "")};
 };
-const RG_LABEL = {us: "US", ca: "Canadian", uk: "UK", ie: "Irish", emea: "EMEA"};
+const RG_LABEL = {all: "", us: "US", ca: "Canadian", uk: "UK", ie: "Irish", emea: "EMEA"};
 const FIT = ["Director", "Executive", "Principal+"];
-const DEFAULTS = {company:[], state:"", dept:"", level:"", remote:"", q:"", role:"", domain:"", fit:false};
+const DEFAULTS = {country:"", company:[], state:"", dept:"", level:"", remote:"", q:"", role:"", domain:"", fit:false};
 const F = {...DEFAULTS, company: []};
 let page = 0; const PER = 50;
 
@@ -182,6 +187,7 @@ function filtered(skip) {
     (!F.fit || FIT.includes(j.seniority)) &&
     (!F.company.length || F.company.includes(j.company)) &&
     (!F.state || j.states.includes(F.state)) &&
+    (!F.country || j.ctry === F.country) &&
     (!F.dept || j.department === F.dept) &&
     (!F.level || j.seniority === F.level) &&
     (F.remote === "" || (F.remote === "1") === j.remote) &&
@@ -234,7 +240,7 @@ function render() {
   $("fdomain").value = F.domain;
   const week = rows.filter(j => j.ts && NOW - j.ts <= 7 * DAY).length;
   $("tiles").innerHTML = [
-    [rows.length.toLocaleString(), "open " + (RG_LABEL[window.__rg] || "US") + " roles (matching)"],
+    [rows.length.toLocaleString(), ("open " + (RG_LABEL[window.__rg] || "") + " roles (matching)").replace("  ", " ")],
     [new Set(rows.map(j => j.company)).size, "companies"],
     [rows.length ? Math.round(rows.filter(j => j.remote).length / rows.length * 100) + "%" : "0%", "remote"],
     [week, "dated in last 7 days"],
@@ -246,7 +252,7 @@ function render() {
   const undated = rows.filter(j => !j.ts).length;
   if (undated) recency.push(["No date", undated]);
   $("charts").innerHTML =
-    bars(window.__rg === "us" ? "By state" : "By country", count(rows, j => j.states), "state") +
+    (window.__rg === "us" ? bars("By state", count(rows, j => j.states), "state") : bars("By country", count(rows, j => j.ctry), "country")) +
     bars("By seniority", count(rows, j => j.seniority), "level") +
     bars("By company", count(rows, j => j.company), "company") +
     `<div class="card"><h2>By recency</h2>${recency.map(([l, n]) => `<div class="bar" style="cursor:default"><span class="l">${l}</span><span class="t"><i style="width:${n / Math.max(1, ...recency.map(r => r[1])) * 100}%"></i></span><span class="n">${n}</span></div>`).join("")}</div>`;
@@ -269,15 +275,16 @@ function init() {
   const when = new Date(DATA.generated_at);
   $("asof").textContent = `Data as of ${isNaN(when) ? "unknown" : when.toLocaleString()} · ${DATA.companyCount ?? DATA.companies.length} companies`;
   $("freg").value = window.__rg;
-  $("freg").addEventListener("change", e => { location.search = e.target.value === "us" ? "" : "?region=" + e.target.value; });
-  if (window.__rg !== "us") $("fs").firstElementChild.textContent = "All countries";
+  $("freg").addEventListener("change", e => { location.search = e.target.value === "all" ? "" : "?region=" + e.target.value; });
+  $("fs").hidden = window.__rg !== "us"; $("fcn").hidden = !(window.__rg === "all" || window.__rg === "emea");
   msInit(count(jobs, j => j.company));
   fillSelect("fs", count(jobs, j => j.states));
+  fillSelect("fcn", count(jobs, j => j.ctry));
   fillSelect("fd", count(jobs, j => j.department));
   fillSelect("fl", count(jobs, j => j.seniority));
   const bind = (id, key, ev = "change") => $(id).addEventListener(ev, e => { F[key] = e.target.value; page = 0; sync(); render(); });
   bind("frole", "role"); bind("fdomain", "domain"); $("ffit").addEventListener("change", e => { F.fit = e.target.checked; page = 0; render(); });
-  bind("fs", "state"); bind("fd", "dept"); bind("fl", "level"); bind("fr", "remote"); bind("q", "q", "input");
+  bind("fs", "state"); bind("fcn", "country"); bind("fd", "dept"); bind("fl", "level"); bind("fr", "remote"); bind("q", "q", "input");
   $("reset").onclick = () => { Object.assign(F, DEFAULTS, { company: [] }); $("q").value = ""; page = 0; sync(); render(); };
   const pgClick = e => { const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return; page += +b.dataset.pg; render(); (e.currentTarget.id === "pgBot" ? $("count") : $("pgTop")).scrollIntoView({ block: "start" }); };
   $("pgTop").onclick = pgClick; $("pgBot").onclick = pgClick;
@@ -287,11 +294,11 @@ function init() {
   });
   render();
 }
-function sync() { $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; msSync(); $("fs").value = F.state; $("fd").value = F.dept; $("fl").value = F.level; $("fr").value = F.remote; }
+function sync() { $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; msSync(); $("fs").value = F.state; $("fcn").value = F.country; $("fd").value = F.dept; $("fl").value = F.level; $("fr").value = F.remote; }
 async function boot() {
   if (DATA.live) {
     $("list").innerHTML = '<div class="meta">Loading jobs…</div>';
-    try { const j = window.__jp ? await window.__jp : null; if (j) DATA = j; else { const r = await fetch("/api/jobs" + (window.__rg === "us" ? "" : "?region=" + window.__rg)); if (!r.ok) throw 0; DATA = await r.json(); } }
+    try { const j = window.__jp ? await window.__jp : null; if (j) DATA = j; else { const j2 = await window.__load(window.__rg); if (!j2) throw 0; DATA = j2; } }
     catch (e) { $("list").innerHTML = '<div class="meta">Could not load jobs. Please refresh the page.</div>'; if (window.hideSplash) window.hideSplash(); return; }
   }
   jobs = DATA.jobs.map(prep);
@@ -321,7 +328,7 @@ boot();
   document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")send();else tick=Date.now()});
   addEventListener("pagehide",send);
   document.addEventListener("change",function(e){var t=e.target;if(!t||!t.id)return;
-    if(/^(freg|fdomain|frole|fc|fs|fd|fl|fr|ffit)$/.test(t.id)){var v=t.type==="checkbox"?(t.checked?"on":"off"):t.value;if(v&&S.f.length<40){S.f.push(t.id+":"+String(v).slice(0,60));send()}}
+    if(/^(freg|fdomain|frole|fc|fs|fcn|fd|fl|fr|ffit)$/.test(t.id)){var v=t.type==="checkbox"?(t.checked?"on":"off"):t.value;if(v&&S.f.length<40){S.f.push(t.id+":"+String(v).slice(0,60));send()}}
     else if(t.id==="q"){var q=(t.value||"").trim().toLowerCase().slice(0,40);if(q&&S.q.length<12){S.q.push(q);send()}}},true);
   document.addEventListener("click",function(e){if(e.target.closest&&e.target.closest("[data-pg]")){S.pg++;send()}},true);
   document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a.job");if(!a||S.clicks.length>=25)return;
