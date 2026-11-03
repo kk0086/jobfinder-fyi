@@ -104,7 +104,7 @@ dialog#cd::backdrop{background:rgba(0,0,0,.45)}
 .side{flex:0 0 250px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
 .side .sh{display:flex;justify-content:space-between;align-items:center}
 .side .sh button{border:0;background:none;color:#0f566f;font:inherit;font-size:13px;cursor:pointer;padding:0}
-.fl{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}.fl[hidden]{display:none}.pay{color:#0b7a4b;font-weight:600}
+.fl{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}.fl[hidden]{display:none}.pay{color:#0b7a4b;font-weight:600}.mrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.mrow select{margin-left:4px;padding:4px 6px;border:1px solid var(--line,#e6e5df);border-radius:6px;background:#fff;font:inherit}
 .fl select{width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);min-width:0}
 .fl .ms>button{width:100%;min-width:0;font-size:15px}
 .main{flex:999 1 560px;min-width:0}
@@ -153,7 +153,7 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
   <div class="sub" id="asof"></div>
   <div class="tiles" id="tiles"></div>
   <div class="charts" id="charts"></div>
-  <div class="meta" id="count"></div>
+  <div class="meta mrow"><span id="count"></span><label id="sortw" hidden>Sort by <select id="fsort"><option value="">Newest, senior first</option><option value="hi">Salary: high to low</option><option value="lo">Salary: low to high</option></select></label></div>
   <div class="pager" id="pgTop"></div>
   <div class="list" id="list"></div>
   <div class="pager" id="pgBot"></div>
@@ -192,7 +192,7 @@ const prep = j => {
 };
 const RG_LABEL = {all: "", us: "US", ca: "Canadian", uk: "UK", ie: "Irish", emea: "EMEA"};
 const FIT = ["Director", "Executive", "Principal+"];
-const DEFAULTS = {country:"", company:[], state:"", dept:"", level:"", remote:"", q:"", role:"", domain:"", fit:false, pay:false};
+const DEFAULTS = {country:"", company:[], state:"", dept:"", level:"", remote:"", q:"", role:"", domain:"", fit:false, pay:false, sort:""};
 const F = {...DEFAULTS, company: []};
 let page = 0; const PER = 50;
 
@@ -222,7 +222,7 @@ function filtered(skip) {
     (!F.level || j.seniority === F.level) &&
     (F.remote === "" || (F.remote === "1") === j.remote) &&
     (!toks.length || (hay => toks.every(t => t.length > 3 ? hay.includes(t) : new RegExp("(^|[^a-z0-9])" + t.replace(/[^a-z0-9]/g, "") + "([^a-z0-9]|$)").test(hay)))((j.title + " " + j.company + " " + j.location + " " + j.department).toLowerCase()))
-  ).sort((a, b) => (FIT.includes(b.seniority) - FIT.includes(a.seniority)) || ((b.ts || 0) - (a.ts || 0)));
+  ).sort(F.pay && F.sort ? (a, b) => ((b.salary_min + b.salary_max) - (a.salary_min + a.salary_max)) * (F.sort === "lo" ? -1 : 1) : (a, b) => (FIT.includes(b.seniority) - FIT.includes(a.seniority)) || ((b.ts || 0) - (a.ts || 0)));
 }
 
 function fillSelect(id, entries) {
@@ -290,6 +290,7 @@ function render() {
   const pages = Math.max(1, Math.ceil(rows.length / PER));
   if (page >= pages) page = pages - 1;
   const lo = page * PER;
+  $("sortw").hidden = !F.pay;
   $("count").textContent = `${rows.length.toLocaleString()} roles` + (rows.length > PER ? `, showing ${lo + 1}–${Math.min(rows.length, lo + PER)}` : "");
   const pg = rows.length > PER ? `<button data-pg="-1" ${page === 0 ? "disabled" : ""}>← Previous</button><span>Page ${page + 1} of ${pages}</span><button data-pg="1" ${page >= pages - 1 ? "disabled" : ""}>Next →</button>` : "";
   $("pgTop").innerHTML = pg; $("pgBot").innerHTML = pg;
@@ -319,7 +320,7 @@ function init() {
   fillSelect("fs", count(jobs, j => j.states));
   fillSelect("fl", count(jobs, j => j.seniority));
   const bind = (id, key, ev = "change") => $(id).addEventListener(ev, e => { F[key] = e.target.value; page = 0; sync(); render(); });
-  bind("frole", "role"); bind("fdomain", "domain"); $("ffit").addEventListener("change", e => { F.fit = e.target.checked; page = 0; render(); }); $("fpay").addEventListener("change", e => { F.pay = e.target.checked; page = 0; render(); });
+  bind("frole", "role"); bind("fdomain", "domain"); $("ffit").addEventListener("change", e => { F.fit = e.target.checked; page = 0; render(); }); $("fpay").addEventListener("change", e => { F.pay = e.target.checked; if (!F.pay) { F.sort = ""; $("fsort").value = ""; } page = 0; render(); }); $("fsort").addEventListener("change", e => { F.sort = e.target.value; page = 0; render(); });
   bind("fs", "state"); bind("fl", "level"); bind("fr", "remote"); bind("q", "q", "input");
   $("reset").onclick = () => { Object.assign(F, DEFAULTS, { company: [] }); $("q").value = ""; page = 0; sync(); render(); };
   const pgClick = e => { const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return; page += +b.dataset.pg; render(); (e.currentTarget.id === "pgBot" ? $("count") : $("pgTop")).scrollIntoView({ block: "start" }); };
@@ -331,7 +332,7 @@ function init() {
   render();
 }
 function chips() { document.querySelectorAll("#pop button").forEach(b => b.classList.toggle("on", b.dataset.remote ? F.remote === "1" : (b.dataset.q && F.q === b.dataset.q))); }
-function sync() { chips(); $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; $("fpay").checked = F.pay; msSync(); $("fs").value = F.state; $("fl").value = F.level; $("fr").value = F.remote; }
+function sync() { chips(); $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; $("fpay").checked = F.pay; $("fsort").value = F.sort; msSync(); $("fs").value = F.state; $("fl").value = F.level; $("fr").value = F.remote; }
 async function boot() {
   if (DATA.live) {
     $("list").innerHTML = '<div class="meta">Loading jobs…</div>';
