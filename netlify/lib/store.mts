@@ -11,7 +11,7 @@ type ChunkBlob = { at: string; jobs: Job[]; report: { name: string; ok: boolean;
 export async function runChunk(chunk: number) {
   const store = getStore("feed");
   const prev = (await store.get(`v2-chunk-${chunk}`, { type: "json" }).catch(() => null)) as ChunkBlob | null;
-  const { jobs, report } = chunk < FEED_CHUNKS ? await crawlChunk(chunk) : await crawlBig(chunk - FEED_CHUNKS);
+  const { jobs, report } = chunk < FEED_CHUNKS ? await crawlChunk(chunk, 24000, prev?.jobs || []) : await crawlBig(chunk - FEED_CHUNKS);
   const failed = new Set(report.filter(r => !r.ok).map(r => r.name));
   // A company that failed this run keeps its previous roles instead of vanishing.
   const kept = prev ? prev.jobs.filter(j => failed.has(j.company)) : [];

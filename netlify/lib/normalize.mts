@@ -135,6 +135,17 @@ const SENIORITY_RULES: [string, RegExp][] = [
   ["Entry", /\b(entry[- ]level|junior|jr\.?|associate|new grad|graduate|early career|apprentice)\b/],
   ["Manager", /(?<!product )\bmanager\b/],
 ];
+// Turns a posted pay range into an annual figure; returns null for anything implausible.
+export function annualPay(min: any, max: any, interval: string): { min: number; max: number } | null {
+  let a = Number(min), b = Number(max);
+  if (!(a > 0)) return null;
+  if (!(b > 0)) b = a;
+  const iv = String(interval || "year").toLowerCase();
+  const k = /hour/.test(iv) ? 2080 : /month/.test(iv) ? 12 : /week/.test(iv) ? 52 : /day/.test(iv) ? 260 : 1;
+  a *= k; b *= k;
+  if (a < 15000 || b > 5_000_000 || b < a) return null;
+  return { min: Math.round(a), max: Math.round(b) };
+}
 export function seniority(title: string): string {
   const t = (title || "").toLowerCase();
   for (const [label, re] of SENIORITY_RULES) if (re.test(t)) return label;
@@ -206,7 +217,7 @@ export function roleFamily(title: string, department: string): string | null {
 }
 
 // ---- Job normalization --------------------------------------------------
-export interface RawJob { company: string; title: string; location: string; department: string; url: string; posted?: string | null; updated?: string | null; remote?: boolean | null }
+export interface RawJob { company: string; title: string; location: string; department: string; url: string; posted?: string | null; updated?: string | null; remote?: boolean | null; salary_min?: number | null; salary_max?: number | null; salary_cur?: string | null; gh_id?: number | string | null }
 
 const iso = (s?: string | number | null) => {
   if (s === undefined || s === null || s === "") return null;
@@ -234,7 +245,7 @@ export function normalizeJob(j: RawJob, opts: { assumeUS?: boolean } = {}) {
     department: dept || inferDepartment(j.title), department_inferred: !dept,
     role: family, domains: findDomains(j.title, dept), example: false,
     seniority: seniority(j.title), remote, posted: iso(j.posted), updated: iso(j.updated),
-    url: j.url.trim(), salary_min: null, salary_max: null, ...(cc ? { cc } : {}),
+    url: j.url.trim(), salary_min: j.salary_min ?? null, salary_max: j.salary_max ?? null, ...(j.salary_min ? { salary_cur: (j.salary_cur || "USD").toUpperCase() } : {}), ...(j.gh_id ? { gh_id: j.gh_id } : {}), ...(cc ? { cc } : {}),
   };
 }
 export type Job = NonNullable<ReturnType<typeof normalizeJob>>;

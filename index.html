@@ -104,7 +104,7 @@ dialog#cd::backdrop{background:rgba(0,0,0,.45)}
 .side{flex:0 0 250px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
 .side .sh{display:flex;justify-content:space-between;align-items:center}
 .side .sh button{border:0;background:none;color:#0f566f;font:inherit;font-size:13px;cursor:pointer;padding:0}
-.fl{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}.fl[hidden]{display:none}
+.fl{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}.fl[hidden]{display:none}.pay{color:#0b7a4b;font-weight:600}
 .fl select{width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);min-width:0}
 .fl .ms>button{width:100%;min-width:0;font-size:15px}
 .main{flex:999 1 560px;min-width:0}
@@ -202,7 +202,8 @@ const ago = ts => {
   if (m < 1440) return Math.round(m / 60) + "h ago";
   const d = m / 1440; return d < 60 ? Math.floor(d) + "d ago" : Math.floor(d / 30) + "mo ago";
 };
-const money = n => "$" + Math.round(n / 1000) + "K";
+const SYM = {USD:"$", GBP:"£", EUR:"€", CAD:"C$", AUD:"A$", CHF:"CHF ", SEK:"SEK ", DKK:"DKK ", PLN:"PLN ", INR:"₹"};
+const money = (n, cur) => (SYM[cur || "USD"] || (cur + " ")) + Math.round(n / 1000) + "K";
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const count = (arr, fn) => { const m = new Map(); arr.forEach(x => [].concat(fn(x)).forEach(k => k && m.set(k, (m.get(k) || 0) + 1))); return [...m].sort((a, b) => b[1] - a[1]); };
 
@@ -294,7 +295,7 @@ function render() {
     <a class="job" href="${esc(j.url)}" target="_blank" rel="noopener noreferrer">
       <span class="t">${esc(j.title)}${j.remote ? '<span class="tag">Remote</span>' : ""}${j.example ? '<span class="tag">Your example</span>' : ""}${FIT.includes(j.seniority) ? '<span class="tag">' + esc(j.seniority === "Principal+" ? "Staff / Principal / Group" : j.seniority) + '</span>' : ""}</span>
       <span class="r">${j.tsKind ? j.tsKind + " " : ""}${ago(j.ts)}</span>
-      <span class="c">${esc(j.company)} · ${esc(j.location || "Location n/a")} · ${esc(j.department)}${j.salary_min ? " · " + money(j.salary_min) + (j.salary_max ? "–" + money(j.salary_max) : "") : ""}${j.src === "search" ? " · <i class=\"fs\">from search</i>" : ""}</span>
+      <span class="c">${esc(j.company)} · ${esc(j.location || "Location n/a")} · ${esc(j.department)}${j.salary_min ? " · <b class=\"pay\">" + money(j.salary_min, j.salary_cur) + (j.salary_max && j.salary_max !== j.salary_min ? "–" + money(j.salary_max, j.salary_cur).replace(/^\D+/, "") : "") + "</b>" : ""}${j.src === "search" ? " · <i class=\"fs\">from search</i>" : ""}</span>
     </a>`).join("") || '<div class="meta">No roles match these filters.</div>';
 }
 
