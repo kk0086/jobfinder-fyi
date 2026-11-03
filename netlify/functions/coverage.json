@@ -604,6 +604,18 @@
    "note": "read automatically every morning (jobs.booking.com), US and international roles"
   },
   {
+   "name": "Deloitte",
+   "ats": "avature",
+   "status": "ok",
+   "note": "read automatically every morning (apply.deloitte.com), US roles"
+  },
+  {
+   "name": "Accenture",
+   "ats": "workday",
+   "status": "ok",
+   "note": "read automatically every morning (Workday), US roles"
+  },
+  {
    "name": "Priceline",
    "ats": "workday",
    "status": "ok",

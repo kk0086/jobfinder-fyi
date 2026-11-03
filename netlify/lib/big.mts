@@ -37,6 +37,11 @@ function workday(name: string, host: string, tenant: string, site: string, cap =
       const hit = (f.values || []).flatMap((v: any) => v.facetParameter ? [v] : (v.values || [])).find((v: any) => /^united states( of america)?$/i.test(v.descriptor || ""));
       if (hit && /country/i.test(f.facetParameter || "")) facets = { [f.facetParameter]: [hit.id] };
     }
+    if (!Object.keys(facets).length) {
+      // Fallback: the country facet can be nested one level down (e.g. Accenture).
+      const walk = (f: any) => { for (const v of f?.values || []) { if (/country/i.test(f.facetParameter || "") && /^united states( of america)?$/i.test(v.descriptor || "") && v.id) facets = { [f.facetParameter]: [v.id] }; if (v?.values) walk(v); } };
+      for (const f of first.facets || []) walk(f);
+    }
     const hasUS = Object.keys(facets).length > 0;
     const head = await post({ appliedFacets: facets, limit: 20, offset: 0, searchText: "" });
     const total = Math.min(head.total || 0, cap);
@@ -288,6 +293,27 @@ function jibe(name: string, origin: string, all = false): Reader {
   } };
 }
 
+// Avature career sites (Deloitte): the search page lists 100 jobs per page as HTML articles (link, title, location in the last subtitle span).
+function avature(name: string, origin: string, cap = 3000): Reader {
+  const page = async (o: number): Promise<RawJob[]> => {
+    const r = await fetch(`${origin}/SearchJobs/?jobRecordsPerPage=100&jobOffset=${o}`, { headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html" }, signal: AbortSignal.timeout(20000) });
+    if (!r.ok) return [];
+    const html = await r.text();
+    const dec = (x: string) => x.replace(/&amp;/g, "&").replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
+    return html.split("<article").slice(1).flatMap(a => {
+      const m = /href="(https?:[^"]*\/JobDetail\/[^"]+)"[^>]*>\s*([^<]+?)\s*<\/a>/.exec(a); if (!m) return [];
+      const spans = [...a.matchAll(/<span[^>]*>\s*([^<]*?)\s*<\/span>/g)].map(x => dec(x[1])).filter(Boolean);
+      return [{ company: name, title: dec(m[2]), location: (spans[spans.length - 1] || "").replace(/,\s*United States$/, ""), department: "", url: m[1] } as RawJob];
+    });
+  };
+  return { name, run: async () => {
+    const pages = await pool(range(0, cap, 100), 6, page);
+    const raw = pages.flat().filter(Boolean) as RawJob[];
+    if (!raw.length) throw new Error("no jobs read");
+    return { raw, assumeUS: true };
+  } };
+}
+
 // Phenom People career sites (eBay, Chewy, Cisco, Lowe's, UPS, ...): /widgets search API, 100 per page.
 function phenom(name: string, origin: string, locale = "us/en", cap = 2000): Reader {
   const [cc, lang] = locale.split("/");
@@ -497,7 +523,7 @@ const SHOPIFY: Reader = { name: "Shopify", run: async () => {
   return { raw: out };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "bytedance"; name: string; [k: string]: any };
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "bytedance" | "avature"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -509,6 +535,7 @@ export function fromSpec(s: Spec): Reader {
     case "smartrecruiters": return smartrecruiters(s.name, s.id);
     case "builtin": { const b = BIG.find(x => x.name === s.name); if (!b) throw new Error("not found"); return b; }
     case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
+    case "avature": return avature(s.name, s.origin, s.cap || 3000);
     case "taleo": return taleo(s.name, s.host, s.org, String(s.cws));
     case "vaia": return vaia(s.name, s.page);
     case "bytedance": return bytedance(s.name, s.origin);
@@ -547,6 +574,8 @@ export const BIG: Reader[] = [
   bytedance("ByteDance", "https://joinbytedance.com"),
   workday("DraftKings", "draftkings.wd1.myworkdayjobs.com", "draftkings", "DraftKings"),
   workday("Priceline", "priceline.wd1.myworkdayjobs.com", "priceline", "Priceline"),
+  avature("Deloitte", "https://apply.deloitte.com/en_US/careers", 3000),
+  workday("Accenture", "accenture.wd103.myworkdayjobs.com", "accenture", "AccentureCareers", 1200),
 ];
 
 export async function crawlBig(i: number) {
