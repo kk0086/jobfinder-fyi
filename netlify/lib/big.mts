@@ -427,6 +427,37 @@ function vaia(name: string, page: string): Reader {
   } };
 }
 
+// ByteDance careers (joinbytedance.com): the site's own search API, which needs a CSRF cookie from the first page load.
+function bytedance(name: string, origin: string): Reader {
+  const UA = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", "accept-language": "en-US,en;q=0.9" };
+  return { name, run: async () => {
+    const home = await fetch(`${origin}/search`, { headers: UA, signal: AbortSignal.timeout(14000) });
+    const cookies = ((home.headers as any).getSetCookie?.() || []) as string[];
+    const jar = cookies.map(c => c.split(";")[0]).join("; ");
+    const csrf = /atsx-csrf-token=([^;]+)/.exec(jar)?.[1] || "";
+    const post = async (offset: number, keyword: string) => {
+      const r = await fetch(`${origin}/api/v1/search/job/posts?keyword=${encodeURIComponent(keyword)}&limit=50&offset=${offset}&job_category_id_list=&tag_id_list=&location_code_list=&subject_id_list=&recruitment_id_list=&portal_type=2&job_function_id_list=&portal_entrance=1`, {
+        method: "POST", signal: AbortSignal.timeout(14000),
+        headers: { ...UA, "content-type": "application/json", accept: "application/json", cookie: jar, "x-csrf-token": decodeURIComponent(csrf), origin, referer: `${origin}/search` },
+        body: JSON.stringify({ keyword, limit: 50, offset, job_category_id_list: [], tag_id_list: [], location_code_list: [], subject_id_list: [], recruitment_id_list: [], portal_type: 2, job_function_id_list: [], portal_entrance: 1 }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    };
+    const seen = new Map<string, RawJob>();
+    for (const kw of QUERIES) {
+      for (let off = 0; off < 300; off += 50) {
+        const j = await post(off, kw);
+        const list = j?.data?.job_post_list || [];
+        for (const x of list) seen.set(String(x.id), { company: name, title: x.title, location: [x.city_info?.name, x.city_info?.parent?.name].filter(Boolean).join(", ") || x.city_info?.en_name || "", department: x.job_category?.name || "", url: `${origin}/search/${x.id}`, posted: x.publish_time ? new Date(+x.publish_time).toISOString() : null });
+        if (list.length < 50) break;
+      }
+    }
+    if (!seen.size) throw new Error("no results");
+    return { raw: [...seen.values()] };
+  } };
+}
+
 // Adzuna job search (second source for companies we do not read directly). Needs ADZUNA_APP_ID and ADZUNA_APP_KEY.
 const ADZUNA_QUERIES = ["product manager", "senior product manager", "principal product manager", "director product management", "trust and safety", "technical program manager", "software engineer", "data scientist"]; // 8 queries x 3 pages = 24 calls per run (free tier is 25)
 const ADZUNA: Reader = { name: "Adzuna search", run: async () => {
@@ -469,7 +500,7 @@ const SHOPIFY: Reader = { name: "Shopify", run: async () => {
   return { raw: out };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia"; name: string; [k: string]: any };
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "bytedance"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -483,6 +514,7 @@ export function fromSpec(s: Spec): Reader {
     case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
     case "taleo": return taleo(s.name, s.host, s.org, String(s.cws));
     case "vaia": return vaia(s.name, s.page);
+    case "bytedance": return bytedance(s.name, s.origin);
     case "phenom": return phenom(s.name, s.origin, s.locale || "us/en");
   }
   throw new Error("unknown kind");
