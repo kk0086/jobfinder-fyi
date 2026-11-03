@@ -19,12 +19,13 @@ const SKIP = new Set(["embed", "jobs", "careers", "api", "v1", "boards", "static
 const pretty = (s: string) => s.replace(/[-_]+/g, " ").replace(/\b\w/g, c => c.toUpperCase()).trim();
 const norm = (n: string) => n.toLowerCase().replace(/\b(inc|llc|ltd|corp|corporation|company|co|the|group|holdings|technologies|technology)\b\.?/g, "").replace(/[^a-z0-9]/g, "");
 
-type Task = { ats: ATS; h: number; page: number };
+type Task = { ats: ATS; h: number; page: number; count?: boolean; tries?: number };
 type State = {
   phase: "idle" | "cdx" | "test" | "done";
   crawl?: string; lastCrawl?: string; startedAt?: string; finishedAt?: string;
   tasks?: Task[]; todo?: Record<ATS, string[]>; cursor?: Record<ATS, number>;
   stats: { pages: number; candidates: number; tested: number; added: number };
+  partial?: boolean;
   log?: string;
 };
 const store = () => getStore({ name: "feed", consistency: "strong" });
@@ -75,29 +76,41 @@ export async function ccStep(budgetMs = 22000): Promise<string> {
     const c = await fetch("https://index.commoncrawl.org/collinfo.json", { signal: AbortSignal.timeout(15000) }).then(r => r.json());
     const crawl = c[0].id as string;
     if (crawl === s.lastCrawl) { s.phase = "done"; s.finishedAt = new Date().toISOString(); s.log = `no new crawl since ${crawl}`; await saveState(s); return s.log; }
+    // One count task per host pattern; each turns into its page tasks when it runs (the index server is flaky, so one request per step).
     const tasks: Task[] = [];
-    for (const ats of ATSES) for (let h = 0; h < HOSTS[ats].length; h++) {
-      const n = await fetch(`https://index.commoncrawl.org/${crawl}-index?url=${encodeURIComponent(HOSTS[ats][h].pat)}&output=json&fl=url&showNumPages=true`, { signal: AbortSignal.timeout(15000) }).then(r => r.text()).catch(() => "");
-      const pages = Number(/"pages": ?(\d+)/.exec(n)?.[1] || n.trim().split(/\s+/)[0] || 0) || 0;
-      for (let p = 0; p < pages; p++) tasks.push({ ats, h, page: p });
-    }
+    for (const ats of ATSES) for (let h = 0; h < HOSTS[ats].length; h++) tasks.push({ ats, h, page: 0, count: true });
     for (const ats of ATSES) await store().setJSON(candKey(ats), []);
-    await saveState({ phase: "cdx", crawl, lastCrawl: s.lastCrawl, startedAt: new Date().toISOString(), tasks, stats: { pages: tasks.length, candidates: 0, tested: 0, added: 0 }, log: `started crawl ${crawl}, ${tasks.length} index pages` });
-    return `started ${crawl} with ${tasks.length} pages`;
+    await saveState({ phase: "cdx", crawl, lastCrawl: s.lastCrawl, startedAt: new Date().toISOString(), tasks, stats: { pages: 0, candidates: 0, tested: 0, added: 0 }, log: `started crawl ${crawl}` });
+    return `started ${crawl}`;
   }
 
   if (s.phase === "cdx") {
     const task = s.tasks!.shift();
     if (task) {
+      const MAX = 6;
       try {
         const h = HOSTS[task.ats][task.h];
-        const txt = await fetch(`https://index.commoncrawl.org/${s.crawl}-index?url=${encodeURIComponent(h.pat)}&output=json&fl=url&page=${task.page}`, { signal: AbortSignal.timeout(Math.max(8000, budgetMs - 3000)) }).then(r => r.text());
-        const seen = new Set<string>();
-        for (const line of txt.split("\n")) { const m = line.match(/"url": ?"([^"]+)"/); if (!m) continue; const sl = h.re.exec(m[1])?.[1]?.toLowerCase(); if (sl && !SKIP.has(sl) && !sl.includes("%")) seen.add(sl); }
-        const cur = ((await store().get(candKey(task.ats), { type: "json" }).catch(() => null)) as string[] | null) || [];
-        const merged = new Set(cur); seen.forEach(x => merged.add(x));
-        await store().setJSON(candKey(task.ats), [...merged]);
-      } catch (e: any) { if ((task as any).retry == null) { (task as any).retry = 1; s.tasks!.push(task); } }
+        const base = `https://index.commoncrawl.org/${s.crawl}-index?url=${encodeURIComponent(h.pat)}&output=json&fl=url`;
+        if (task.count) {
+          const r = await fetch(base + "&showNumPages=true", { signal: AbortSignal.timeout(15000) });
+          const pages = r.ok ? Number(/"pages": ?(\d+)/.exec(await r.text())?.[1] || 0) : 0;
+          if (!pages) throw new Error(`count HTTP ${r.status}`);
+          for (let p = 0; p < pages; p++) s.tasks!.push({ ats: task.ats, h: task.h, page: p });
+          s.stats.pages += pages;
+        } else {
+          const r = await fetch(base + `&page=${task.page}`, { signal: AbortSignal.timeout(Math.max(8000, budgetMs - 3000)) });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const txt = await r.text();
+          const seen = new Set<string>();
+          for (const line of txt.split("\n")) { const m = line.match(/"url": ?"([^"]+)"/); if (!m) continue; const sl = h.re.exec(m[1])?.[1]?.toLowerCase(); if (sl && !SKIP.has(sl) && !sl.includes("%")) seen.add(sl); }
+          const cur = ((await store().get(candKey(task.ats), { type: "json" }).catch(() => null)) as string[] | null) || [];
+          const merged = new Set(cur); seen.forEach(x => merged.add(x));
+          await store().setJSON(candKey(task.ats), [...merged]);
+        }
+      } catch (e: any) {
+        task.tries = (task.tries || 0) + 1;
+        if (task.tries < MAX) s.tasks!.push(task); else { s.partial = true; s.log = `gave up on ${task.ats} ${task.count ? "count" : "page " + task.page}: ${String(e?.message || e).slice(0, 60)}`; }
+      }
     }
     if (!s.tasks!.length) {
       // Candidate list is complete: drop boards we already have or tested before.
@@ -134,8 +147,8 @@ export async function ccStep(budgetMs = 22000): Promise<string> {
       await store().setJSON(testedKey(ats), [...new Set([...prev, ...s.todo![ats]])]);
       await store().setJSON(candKey(ats), []);
     }
-    s.phase = "done"; s.finishedAt = new Date().toISOString(); s.lastCrawl = s.crawl; s.todo = undefined; s.cursor = undefined;
-    s.log = `finished: tested ${s.stats.tested}, added ${s.stats.added} companies`;
+    s.phase = "done"; s.finishedAt = new Date().toISOString(); s.lastCrawl = s.partial ? s.lastCrawl : s.crawl; s.todo = undefined; s.cursor = undefined;
+    s.log = `finished${s.partial ? " (some index pages failed; will retry next week)" : ""}: tested ${s.stats.tested}, added ${s.stats.added} companies`;
   }
   await saveState(s);
   return s.log || `tested ${s.stats.tested}, added ${s.stats.added}`;
