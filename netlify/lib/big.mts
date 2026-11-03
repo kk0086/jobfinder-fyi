@@ -396,7 +396,10 @@ function taleo(name: string, host: string, org: string, cws: string): Reader {
   };
   return { name, run: async () => {
     const seen = new Map<string, RawJob>();
+    // The page shows 10 roles at a time and has no usable paging link, so read it sorted six ways and combine them.
     (await rows("")).forEach(x => seen.set(x.url, x));
+    const views = [0, 1, 2].flatMap(c => ["A", "D"].map(o => `&act=sort&sortColumn=${c}&sortOrder=${o}`));
+    for (const v of views) { try { (await rows(v)).forEach(x => seen.set(x.url, x)); } catch {} }
     if (!seen.size) throw new Error("no results");
     return { raw: [...seen.values()] };
   } };
