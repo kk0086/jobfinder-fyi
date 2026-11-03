@@ -5,6 +5,7 @@ import { readFeed, loadFeeds, type Feed } from "../lib/crawl.mts";
 import { BIG } from "../lib/big.mts";
 import seed from "../lib/seed.json" with { type: "json" };
 import { normalizeJob } from "../lib/normalize.mts";
+import { ccStatus, ccReset, ccStep } from "../lib/ccweekly.mts";
 
 // Owner-only board discovery. Nothing is stored; results go back to the caller.
 //  {action:"cdx", ats, crawl?, page}  -> candidate slugs from the Common Crawl index (plus page count)
@@ -26,6 +27,10 @@ async function pool<T, R>(items: T[], n: number, fn: (x: T) => Promise<R>): Prom
 export default async (req: Request) => {
   if (!isOwner(req)) return new Response("Unauthorized", { status: 401 });
   const b = await req.json();
+  // Weekly Common Crawl search (see lib/ccweekly.mts): "ccstatus" shows progress, "ccrun" starts a fresh run now, "ccstep" does one step.
+  if (b.action === "ccstatus") return Response.json(await ccStatus());
+  if (b.action === "ccrun") { await ccReset(true); return Response.json({ started: true, first: await ccStep() }); }
+  if (b.action === "ccstep") return Response.json({ note: await ccStep() });
   if (b.action === "cdx") {
     let crawl = b.crawl;
     if (!crawl) { const c = await fetch("https://index.commoncrawl.org/collinfo.json").then(r => r.json()); crawl = c[0].id; }
