@@ -577,6 +577,7 @@ export const BIG: Reader[] = [
   avature("Deloitte", "https://apply.deloitte.com/en_US/careers", 3000),
   workday("Accenture", "accenture.wd103.myworkdayjobs.com", "accenture", "AccentureCareers", 1200),
   workday("Sunrun", "sunrun.wd5.myworkdayjobs.com", "sunrun", "Sunrun_Careers"),
+  phenom("Circle (USDC)", "https://careers.circle.com"),
 ];
 
 export async function crawlBig(i: number) {
