@@ -145,7 +145,6 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
     <div class="fl"><span>Companies</span><div class="ms" id="fcw"><button type="button" id="fcb"><span id="fcl">All companies</span><span>▾</span></button><input type="hidden" id="fc"><div class="pn"><input type="search" id="fcs" placeholder="Search companies"><div class="ls" id="fcls"></div><div class="ft"><a id="fcclr">Clear</a><a id="fcdone">Done</a></div></div></div></div>
     <label class="fl" id="fsw"><span>State</span><select id="fs"><option value="">All states</option></select></label>
     <label class="fl" id="fcnw"><span>Country</span><select id="fcn"><option value="">All countries</option></select></label>
-    <label class="fl"><span>Department</span><select id="fd"><option value="">All departments</option></select></label>
     <label class="fl"><span>Seniority</span><select id="fl"><option value="">All seniority</option></select></label>
     <label class="fl"><span>Work mode</span><select id="fr"><option value="">Remote + onsite</option><option value="1">Remote only</option><option value="0">Onsite only</option></select></label>
     <label class="chk"><input id="ffit" type="checkbox"> Director, Principal, Staff and up</label>
@@ -218,7 +217,6 @@ function filtered(skip) {
     (!F.company.length || F.company.includes(j.company)) &&
     (!F.state || j.states.includes(F.state)) &&
     (!F.country || j.ctry === F.country) &&
-    (!F.dept || j.department === F.dept) &&
     (!F.level || j.seniority === F.level) &&
     (F.remote === "" || (F.remote === "1") === j.remote) &&
     (!toks.length || toks.every(t => (j.title + " " + j.company + " " + j.location + " " + j.department).toLowerCase().includes(t)))
@@ -318,11 +316,10 @@ function init() {
   msInit(count(jobs, j => j.company));
   fillSelect("fs", count(jobs, j => j.states));
   fillSelect("fcn", count(jobs, j => j.ctry));
-  fillSelect("fd", count(jobs, j => j.department));
   fillSelect("fl", count(jobs, j => j.seniority));
   const bind = (id, key, ev = "change") => $(id).addEventListener(ev, e => { F[key] = e.target.value; page = 0; sync(); render(); });
   bind("frole", "role"); bind("fdomain", "domain"); $("ffit").addEventListener("change", e => { F.fit = e.target.checked; page = 0; render(); });
-  bind("fs", "state"); bind("fcn", "country"); bind("fd", "dept"); bind("fl", "level"); bind("fr", "remote"); bind("q", "q", "input");
+  bind("fs", "state"); bind("fcn", "country"); bind("fl", "level"); bind("fr", "remote"); bind("q", "q", "input");
   $("reset").onclick = () => { Object.assign(F, DEFAULTS, { company: [] }); $("q").value = ""; page = 0; sync(); render(); };
   const pgClick = e => { const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return; page += +b.dataset.pg; render(); (e.currentTarget.id === "pgBot" ? $("count") : $("pgTop")).scrollIntoView({ block: "start" }); };
   $("pgTop").onclick = pgClick; $("pgBot").onclick = pgClick;
@@ -333,7 +330,7 @@ function init() {
   render();
 }
 function chips() { document.querySelectorAll("#pop button").forEach(b => b.classList.toggle("on", b.dataset.remote ? F.remote === "1" : (b.dataset.q && F.q === b.dataset.q))); }
-function sync() { chips(); $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; msSync(); $("fs").value = F.state; $("fcn").value = F.country; $("fd").value = F.dept; $("fl").value = F.level; $("fr").value = F.remote; }
+function sync() { chips(); $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; msSync(); $("fs").value = F.state; $("fcn").value = F.country; $("fl").value = F.level; $("fr").value = F.remote; }
 async function boot() {
   if (DATA.live) {
     $("list").innerHTML = '<div class="meta">Loading jobs…</div>';
@@ -367,7 +364,7 @@ boot();
   document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")send();else tick=Date.now()});
   addEventListener("pagehide",send);
   document.addEventListener("change",function(e){var t=e.target;if(!t||!t.id)return;
-    if(/^(freg|fdomain|frole|fc|fs|fcn|fd|fl|fr|ffit)$/.test(t.id)){var v=t.type==="checkbox"?(t.checked?"on":"off"):t.value;if(v&&S.f.length<40){S.f.push(t.id+":"+String(v).slice(0,60));send()}}
+    if(/^(freg|fdomain|frole|fc|fs|fcn|fl|fr|ffit)$/.test(t.id)){var v=t.type==="checkbox"?(t.checked?"on":"off"):t.value;if(v&&S.f.length<40){S.f.push(t.id+":"+String(v).slice(0,60));send()}}
     else if(t.id==="q"){var q=(t.value||"").trim().toLowerCase().slice(0,40);if(q&&S.q.length<12){S.q.push(q);send()}}},true);
   document.addEventListener("click",function(e){if(e.target.closest&&e.target.closest("[data-pg]")){S.pg++;send()}},true);
   document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a.job");if(!a||S.clicks.length>=25)return;
