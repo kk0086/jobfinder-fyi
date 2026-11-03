@@ -405,6 +405,28 @@ function taleo(name: string, host: string, org: string, cws: string): Reader {
   } };
 }
 
+// Vaia Talents company pages (a job board that mirrors a company's postings). The job list is embedded in the page as JSON.
+function vaia(name: string, page: string): Reader {
+  const CITY_ST: Record<string, string> = { "palo alto": "CA", "san francisco": "CA", "san jose": "CA", "mountain view": "CA", "sunnyvale": "CA", "los angeles": "CA", "san diego": "CA", "new york": "NY", "seattle": "WA", "austin": "TX", "boston": "MA", "chicago": "IL" };
+  return { name, run: async () => {
+    const r = await fetch(page, { signal: AbortSignal.timeout(14000), headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html" } });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const h = (await r.text()).replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&#39;|&#x27;/g, "'");
+    const re = /"jobId":\[0,(\d+)\],"url":\[0,"([^"]+)"\],"title":\[0,"([^"]+)"\],"companyName":\[0,"[^"]*"\],"city":\[0,(?:"([^"]*)"|null)\](?:[^{}]*?"postedLabel":\[0,(?:"([^"]*)"|null)\])?/g;
+    const out = new Map<string, RawJob>(); let m: RegExpExecArray | null;
+    const now = Date.now();
+    while ((m = re.exec(h))) {
+      const city = (m[4] || "").trim(), st = CITY_ST[city.toLowerCase()];
+      const pm = /(\d+)\s+(day|hour|week|month)/i.exec(m[5] || "");
+      const posted = /today|just/i.test(m[5] || "") ? new Date(now).toISOString() : pm ? new Date(now - +pm[1] * ({ hour: 36e5, day: 864e5, week: 6048e5, month: 2592e6 } as any)[pm[2].toLowerCase()]).toISOString() : null;
+      const title = m[3].replace(/\s*[-–]\s*rednote\s*$/i, "").replace(/^rednote\s+/i, "").trim();
+      out.set(m[2], { company: name, title, location: city ? (st ? `${city}, ${st}` : city) : "", department: "", url: m[2], posted });
+    }
+    if (!out.size) throw new Error("no results");
+    return { raw: [...out.values()], assumeUS: true };
+  } };
+}
+
 // Adzuna job search (second source for companies we do not read directly). Needs ADZUNA_APP_ID and ADZUNA_APP_KEY.
 const ADZUNA_QUERIES = ["product manager", "senior product manager", "principal product manager", "director product management", "trust and safety", "technical program manager", "software engineer", "data scientist"]; // 8 queries x 3 pages = 24 calls per run (free tier is 25)
 const ADZUNA: Reader = { name: "Adzuna search", run: async () => {
@@ -447,7 +469,7 @@ const SHOPIFY: Reader = { name: "Shopify", run: async () => {
   return { raw: out };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo"; name: string; [k: string]: any };
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -460,6 +482,7 @@ export function fromSpec(s: Spec): Reader {
     case "builtin": { const b = BIG.find(x => x.name === s.name); if (!b) throw new Error("not found"); return b; }
     case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
     case "taleo": return taleo(s.name, s.host, s.org, String(s.cws));
+    case "vaia": return vaia(s.name, s.page);
     case "phenom": return phenom(s.name, s.origin, s.locale || "us/en");
   }
   throw new Error("unknown kind");
@@ -491,6 +514,7 @@ export const BIG: Reader[] = [
   SHOPIFY,
   taleo("Costco", "phf.tbe.taleo.net", "COSTCO", "41"),
   jibe("McAfee", "https://careers.mcafee.com"),
+  vaia("RedNote", "https://talents.vaia.com/companies/rednote/"),
 ];
 
 export async function crawlBig(i: number) {
