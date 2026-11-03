@@ -20,7 +20,7 @@ h1{font-size:22px;margin:0}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
 .tile,.card{background:var(--card);border:1px solid var(--line);border-radius:10px}
 .tile{padding:6px 12px}.tile b{display:inline;font-size:18px;letter-spacing:-.3px;margin-right:6px}.tile span{color:var(--muted);font-size:12px}
-.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-bottom:10px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:10px}
 .card{padding:8px 12px}.card h2{font-size:11px;margin:0 0 4px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .bar{display:grid;grid-template-columns:96px 1fr 38px;align-items:center;gap:8px;font-size:12px;margin:1px 0;cursor:pointer;border-radius:4px}
 .bar:hover{background:var(--accent-soft)}
@@ -90,6 +90,26 @@ dialog#cd::backdrop{background:rgba(0,0,0,.45)}
 #cd .row button.go{background:var(--accent);border-color:var(--accent);color:#fff}
 #cd .row button:disabled{opacity:.6;cursor:default}
 #cd .msg2{margin-top:12px;font-size:14px;min-height:1.2em}
+.search{display:flex;align-items:stretch;background:var(--card);border:1px solid #cfcdc4;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);margin:4px 0 12px}
+.search:focus-within{border-color:#0f566f;box-shadow:0 0 0 3px rgba(15,86,111,.18)}
+.search #freg{border:0;border-right:1px solid var(--line);background:var(--bg);padding:0 14px;font:inherit;font-size:15px;color:var(--ink);min-width:140px;border-radius:0}
+.search .sin{display:flex;align-items:center;gap:10px;flex:1;min-width:0;padding:0 14px;color:var(--muted)}
+.search .sin input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;font-size:18px;padding:16px 0;color:var(--ink)}
+.search #sgo{border:0;background:#f96b4c;color:#1d1d1b;font:inherit;font-size:16px;font-weight:700;padding:0 30px;cursor:pointer}
+.search #sgo:hover{background:#ff7b5e}
+.pop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 16px;color:var(--muted);font-size:13px}
+.pop button{border:1px solid #d9d8d0;background:var(--card);border-radius:999px;padding:6px 14px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer}
+.pop button:hover{border-color:var(--accent)}.pop button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.layout{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.side{flex:0 0 250px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.side .sh{display:flex;justify-content:space-between;align-items:center}
+.side .sh button{border:0;background:none;color:#0f566f;font:inherit;font-size:13px;cursor:pointer;padding:0}
+.fl{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}.fl[hidden]{display:none}
+.fl select{width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);min-width:0}
+.fl .ms>button{width:100%;min-width:0;font-size:15px}
+.main{flex:999 1 560px;min-width:0}
+.ftog{display:none;margin:0 0 12px;font:inherit;padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer}
+@media (max-width:760px){.side{display:none;flex-basis:100%}.side.open{display:flex}.ftog{display:inline-block}.search{flex-wrap:wrap}.search #freg{min-width:0;padding:10px 14px;flex:1 1 100%;border-right:0;border-bottom:1px solid var(--line)}.search .sin{flex:1 1 60%}.search #sgo{padding:0 18px}}
 </style>
 <script>window.__rg=(function(){var m=/[?&]region=(all|us|ca|uk|ie|emea)\b/.exec(location.search);return m?m[1]:"all"})();
 window.__load=function(rg){var one=function(r){return fetch("/api/jobs"+(r==="us"?"":"?region="+r)).then(function(x){return x.ok?x.json():null}).catch(function(){return null})};
@@ -110,20 +130,27 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
 
 <div class="wrap">
   <div class="hd"><h1 class="brand"><img src="/logo.png" alt="Job Finder" width="198" height="62"></h1><p class="slogan">Latest Tech jobs. One Search. Find it before everyone else.</p></div>
-  <div class="filters">
+  <div class="search" role="search">
     <select id="freg" aria-label="Region"><option value="all">All regions</option><option value="us">United States</option><option value="ca">Canada</option><option value="uk">United Kingdom</option><option value="ie">Ireland</option><option value="emea">Europe, Middle East &amp; Africa</option></select>
-    <select id="fdomain"><option value="">All domains</option></select>
-    <select id="frole"><option value="">All roles</option><option value="Product management">Product management</option><option value="Software engineering">Software engineering</option><option value="Data engineering">Data engineering, ML &amp; BI</option><option value="Technical program management">Technical program management</option><option value="Program management">Program management</option><option value="UX design">UX design</option><option value="Human resources">Human resources</option><option value="Legal">Legal</option><option value="Financial analyst">Financial analyst</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option></select>
-    <input id="q" type="search" placeholder="Search title, company, location">
-    <div class="ms" id="fcw"><button type="button" id="fcb"><span id="fcl">All companies</span><span>▾</span></button><input type="hidden" id="fc"><div class="pn"><input type="search" id="fcs" placeholder="Search companies"><div class="ls" id="fcls"></div><div class="ft"><a id="fcclr">Clear</a><a id="fcdone">Done</a></div></div></div>
-    <select id="fs"><option value="">All states</option></select>
-    <select id="fcn"><option value="">All countries</option></select>
-    <select id="fd"><option value="">All departments</option></select>
-    <select id="fl"><option value="">All seniority</option></select>
-    <select id="fr"><option value="">Remote + onsite</option><option value="1">Remote only</option><option value="0">Onsite only</option></select>
-    <label class="chk"><input id="ffit" type="checkbox"> Director, Principal, Staff and up</label>
-    <button id="reset">Reset</button>
+    <div class="sin"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" placeholder="Job title, company or location" aria-label="Search jobs" autocomplete="off"></div>
+    <button type="button" id="sgo">Search jobs</button>
   </div>
+  <div class="pop" id="pop"><span>Popular:</span><button type="button" data-q="Product Manager">Product Manager</button><button type="button" data-q="Trust &amp; Safety">Trust &amp; Safety</button><button type="button" data-q="Principal Product">Principal Product</button><button type="button" data-q="Director of Product">Director of Product</button><button type="button" data-q="Data Scientist">Data Scientist</button><button type="button" data-q="" data-remote="1">Remote only</button></div>
+  <button type="button" class="ftog" id="ftog" aria-expanded="false" aria-controls="side">Filters</button>
+  <div class="layout">
+  <aside class="side" id="side">
+    <div class="sh"><b>Filters</b><button type="button" id="reset">Reset</button></div>
+    <label class="fl"><span>Domain</span><select id="fdomain"><option value="">All domains</option></select></label>
+    <label class="fl"><span>Role</span><select id="frole"><option value="">All roles</option><option value="Product management">Product management</option><option value="Software engineering">Software engineering</option><option value="Data engineering">Data engineering, ML &amp; BI</option><option value="Technical program management">Technical program management</option><option value="Program management">Program management</option><option value="UX design">UX design</option><option value="Human resources">Human resources</option><option value="Legal">Legal</option><option value="Financial analyst">Financial analyst</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option></select></label>
+    <div class="fl"><span>Companies</span><div class="ms" id="fcw"><button type="button" id="fcb"><span id="fcl">All companies</span><span>▾</span></button><input type="hidden" id="fc"><div class="pn"><input type="search" id="fcs" placeholder="Search companies"><div class="ls" id="fcls"></div><div class="ft"><a id="fcclr">Clear</a><a id="fcdone">Done</a></div></div></div></div>
+    <label class="fl" id="fsw"><span>State</span><select id="fs"><option value="">All states</option></select></label>
+    <label class="fl" id="fcnw"><span>Country</span><select id="fcn"><option value="">All countries</option></select></label>
+    <label class="fl"><span>Department</span><select id="fd"><option value="">All departments</option></select></label>
+    <label class="fl"><span>Seniority</span><select id="fl"><option value="">All seniority</option></select></label>
+    <label class="fl"><span>Work mode</span><select id="fr"><option value="">Remote + onsite</option><option value="1">Remote only</option><option value="0">Onsite only</option></select></label>
+    <label class="chk"><input id="ffit" type="checkbox"> Director, Principal, Staff and up</label>
+  </aside>
+  <main class="main">
   <div class="sub" id="asof"></div>
   <div class="tiles" id="tiles"></div>
   <div class="charts" id="charts"></div>
@@ -131,6 +158,8 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
   <div class="pager" id="pgTop"></div>
   <div class="list" id="list"></div>
   <div class="pager" id="pgBot"></div>
+  </main>
+  </div>
   <footer class="foot"><span>&copy; 2026 Jobfinder.fyi</span><button type="button" id="contactBtn">Contact</button><a href="/privacy.html">Privacy</a></footer>
 </div>
 <dialog id="cd">
@@ -180,7 +209,8 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":
 const count = (arr, fn) => { const m = new Map(); arr.forEach(x => [].concat(fn(x)).forEach(k => k && m.set(k, (m.get(k) || 0) + 1))); return [...m].sort((a, b) => b[1] - a[1]); };
 
 function filtered(skip) {
-  const q = F.q.toLowerCase();
+  const STOP = new Set(["and", "of", "the", "for", "a", "an", "in"]);
+  const toks = F.q.toLowerCase().split(/\s+/).filter(t => /[a-z0-9]/.test(t) && !STOP.has(t));
   return jobs.filter(j =>
     (!F.role || j.role === F.role) &&
     (skip === "domain" || !F.domain || j.domains.includes(F.domain)) &&
@@ -191,7 +221,7 @@ function filtered(skip) {
     (!F.dept || j.department === F.dept) &&
     (!F.level || j.seniority === F.level) &&
     (F.remote === "" || (F.remote === "1") === j.remote) &&
-    (!q || (j.title + " " + j.company + " " + j.location).toLowerCase().includes(q))
+    (!toks.length || toks.every(t => (j.title + " " + j.company + " " + j.location + " " + j.department).toLowerCase().includes(t)))
   ).sort((a, b) => (FIT.includes(b.seniority) - FIT.includes(a.seniority)) || ((b.ts || 0) - (a.ts || 0)));
 }
 
@@ -276,7 +306,15 @@ function init() {
   $("asof").textContent = `Data as of ${isNaN(when) ? "unknown" : when.toLocaleString()} · ${DATA.companyCount ?? DATA.companies.length} companies`;
   $("freg").value = window.__rg;
   $("freg").addEventListener("change", e => { location.search = e.target.value === "all" ? "" : "?region=" + e.target.value; });
-  $("fs").hidden = window.__rg !== "us"; $("fcn").hidden = !(window.__rg === "all" || window.__rg === "emea");
+  $("fsw").hidden = window.__rg !== "us"; $("fcnw").hidden = !(window.__rg === "all" || window.__rg === "emea");
+  $("pop").addEventListener("click", e => {
+    const b = e.target.closest("button[data-q]"); if (!b) return;
+    if (b.dataset.remote) F.remote = F.remote === "1" ? "" : "1";
+    else { F.q = F.q === b.dataset.q ? "" : b.dataset.q; $("q").value = F.q; }
+    page = 0; sync(); render();
+  });
+  $("sgo").onclick = () => { page = 0; render(); $("count").scrollIntoView({ block: "start", behavior: "smooth" }); };
+  $("ftog").onclick = () => { const o = $("side").classList.toggle("open"); $("ftog").setAttribute("aria-expanded", o); };
   msInit(count(jobs, j => j.company));
   fillSelect("fs", count(jobs, j => j.states));
   fillSelect("fcn", count(jobs, j => j.ctry));
@@ -294,7 +332,8 @@ function init() {
   });
   render();
 }
-function sync() { $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; msSync(); $("fs").value = F.state; $("fcn").value = F.country; $("fd").value = F.dept; $("fl").value = F.level; $("fr").value = F.remote; }
+function chips() { document.querySelectorAll("#pop button").forEach(b => b.classList.toggle("on", b.dataset.remote ? F.remote === "1" : (b.dataset.q && F.q === b.dataset.q))); }
+function sync() { chips(); $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; msSync(); $("fs").value = F.state; $("fcn").value = F.country; $("fd").value = F.dept; $("fl").value = F.level; $("fr").value = F.remote; }
 async function boot() {
   if (DATA.live) {
     $("list").innerHTML = '<div class="meta">Loading jobs…</div>';
