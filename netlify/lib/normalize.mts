@@ -49,6 +49,8 @@ export function isUS(location: string): boolean {
   if (states.length) return true;
   if (/\b(united states|usa|u\.s\.a?\.?)\b/i.test(loc)) return true;
   if (NON_US.test(loc)) return false;
+  // Employers such as Cloudflare list some roles with only a work-mode word ("Hybrid"); we keep those as location unspecified rather than hide them.
+  if (/^\s*(hybrid|distributed|flexible|multiple locations?|various( locations)?|anywhere)\s*$/i.test(loc)) return true;
   return /^\s*remote\s*$/i.test(loc) || /\bremote\b.*\b(us|america|americas)\b|\b(us|usa)\b.*\bremote\b/i.test(loc);
 }
 
