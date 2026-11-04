@@ -578,6 +578,10 @@ export const BIG: Reader[] = [
   workday("Accenture", "accenture.wd103.myworkdayjobs.com", "accenture", "AccentureCareers", 1200),
   workday("Sunrun", "sunrun.wd5.myworkdayjobs.com", "sunrun", "Sunrun_Careers"),
   phenom("Circle (USDC)", "https://careers.circle.com"),
+  smartrecruiters("Care.com", "Carecom1"),
+  workday("Overstock", "overstock.wd5.myworkdayjobs.com", "overstock", "BedBathandBeyond_Careers"),
+  workday("JD.com", "jd.wd103.myworkdayjobs.com", "jd", "Careers_at_JD"),
+  workday("Rakuten", "rakuten.wd1.myworkdayjobs.com", "rakuten", "RakutenAmericas"),
 ];
 
 export async function crawlBig(i: number) {
