@@ -296,7 +296,7 @@ function jibe(name: string, origin: string, all = false): Reader {
 // Avature career sites (Deloitte): the search page lists 100 jobs per page as HTML articles (link, title, location in the last subtitle span).
 function avature(name: string, origin: string, cap = 3000, assumeUS = true): Reader {
   const page = async (o: number): Promise<RawJob[]> => {
-    const r = await fetch(`${origin}/SearchJobs/?jobRecordsPerPage=100&jobOffset=${o}`, { headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html" }, signal: AbortSignal.timeout(20000) });
+    const r = await fetch(`${origin}/SearchJobs/?jobRecordsPerPage=100&jobOffset=${o}&folderRecordsPerPage=100&folderOffset=${o}`, { headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html" }, signal: AbortSignal.timeout(20000) });
     if (!r.ok) return [];
     const html = await r.text();
     const dec = (x: string) => x.replace(/&amp;/g, "&").replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
