@@ -211,7 +211,7 @@ export function inferDepartment(title: string): string {
 // ---- Role families -------------------------------------------------------
 export const FAMILIES = [
   "Product management", "Software engineering", "Data engineering", "Technical program management", "Program management",
-  "UX design", "Human resources", "Legal", "Financial analyst", "Bizdev", "Marketing", "Operations",
+  "UX design", "Human resources", "Legal", "Financial analyst", "Bizdev", "Marketing", "Operations", "Executive",
 ] as const;
 
 const PRODUCT_TITLE = /\b(product (manager|management|lead|owner)|(director|head|vp|vice president|group|principal|staff|senior|sr\.?)( technical)?( of)? product\b)/i;
@@ -232,6 +232,8 @@ export function roleFamily(title: string, department: string): string | null {
   if (/\b(marketing|brand|growth marketer|seo|sem\b|content (strategist|marketing|lead|manager|writer)|communications|public relations|\bpr\b|demand gen|lifecycle|community manager|social media|influencer|copywriter|creative (director|producer)|editorial|events? marketing|field marketing|partner marketing)\b/.test(t)) return "Marketing";
   if (/\b(operations|operator|business operations|biz ?ops|supply chain|logistics|ops (manager|lead|analyst|specialist)|chief of staff|fulfillment|procurement|facilities|workplace|program operations|strategy (and|&) operations|revenue operations|sales operations|trust (and|&) safety operations|support operations|operations (manager|analyst|lead|associate|specialist|director))\b/.test(t)) return "Operations";
   if (/\b(trust (and|&|\+) safety|trust ?& ?safety|content moderation|platform integrity|integrity (lead|manager|director|head))\b/.test(t) || /trust (and|&) safety/i.test(department || "")) return "Operations";
+  // Leadership titles that fit no other family.
+  if (/\b(vice president|vp|executive director|director|svp|senior vice president|chief (product|executive|financial|marketing|operating) officer|ceo|cfo|cmo|coo|cpo)\b/.test(t)) return "Executive";
   return null;
 }
 
