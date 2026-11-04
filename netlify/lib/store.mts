@@ -45,6 +45,8 @@ export async function loadAll() {
   for (let i = jobs.length - 1; i >= 0; i--) if ((jobs[i] as any).src === "search") { const k = norm(jobs[i].company); if (known.has(k) || have.has(k)) jobs.splice(i, 1); }
   const seenUrl = new Set<string>();
   const unique = jobs.filter(j => { const k = j.company + "|" + j.url; if (seenUrl.has(k)) return false; seenUrl.add(k); return true; });
+  // Roles stored before the family was renamed.
+  for (const j of unique as any[]) if (j.role === "Executive") j.role = "Executive leadership";
   return { jobs: unique, at, blobs };
 }
 
