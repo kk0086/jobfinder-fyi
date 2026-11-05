@@ -78,7 +78,7 @@ details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .brand img,:root:not([data-theme="light"]) #splash .logo img{background:#fff;border-radius:10px;padding:6px 12px;box-sizing:content-box}}
 .foot{margin:40px 0 24px;padding-top:22px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 26px;align-items:center;color:var(--muted);font-size:15px}
 .foot a,.foot button{color:var(--muted);font:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:none}
-nav.foot{margin-bottom:0;padding-bottom:0}nav.foot+.foot{margin-top:12px;border-top:0;padding-top:0}
+nav.foot{margin-bottom:0;padding-bottom:0;display:block}nav.foot>span{display:block;margin-bottom:10px;font-weight:600}.pgrid{display:grid;grid-template-rows:repeat(6,auto);grid-auto-flow:column;grid-template-columns:repeat(2,max-content);gap:8px 48px}@media (max-width:600px){.pgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.pgrid a{overflow-wrap:anywhere}}nav.foot+.foot{margin-top:24px!important;padding-top:18px!important;border-top:1px solid var(--line)!important}nav.foot+.foot{margin-top:12px;border-top:0;padding-top:0}
 .foot a:hover,.foot button:hover{color:var(--ink);text-decoration:underline}
 dialog#cd{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:22px;width:min(440px,92vw);box-shadow:0 18px 50px rgba(0,0,0,.28)}
 dialog#cd::backdrop{background:rgba(0,0,0,.45)}
@@ -158,7 +158,7 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
   <div class="pager" id="pgBot"></div>
   </main>
   </div>
-  <nav class="foot" aria-label="Popular searches"><span>Popular searches</span><a href="/jobs/software-engineer">Software Engineer jobs</a><a href="/jobs/ai-engineer">AI Engineer jobs</a><a href="/jobs/full-stack-developer">Full Stack Developer jobs</a><a href="/jobs/devops-engineer">DevOps Engineer jobs</a><a href="/jobs/security-engineer">Security Engineer jobs</a><a href="/jobs/data-scientist">Data Scientist jobs</a><a href="/jobs/product-manager">Product Manager jobs</a><a href="/jobs/ux-designer">UX Designer jobs</a><a href="/jobs/marketing-manager">Marketing Manager jobs</a><a href="/jobs/business-development">Business Development jobs</a><a href="/jobs/recruiter">Recruiter jobs</a></nav>
+  <nav class="foot" aria-label="Popular searches"><span>Popular searches</span><div class="pgrid"><a href="/jobs/software-engineer">Software Engineer jobs</a><a href="/jobs/ai-engineer">AI Engineer jobs</a><a href="/jobs/full-stack-developer">Full Stack Developer jobs</a><a href="/jobs/devops-engineer">DevOps Engineer jobs</a><a href="/jobs/security-engineer">Security Engineer jobs</a><a href="/jobs/data-scientist">Data Scientist jobs</a><a href="/jobs/product-manager">Product Manager jobs</a><a href="/jobs/ux-designer">UX Designer jobs</a><a href="/jobs/marketing-manager">Marketing Manager jobs</a><a href="/jobs/business-development">Business Development jobs</a><a href="/jobs/recruiter">Recruiter jobs</a></div></nav>
   <footer class="foot"><span>&copy; 2026 Jobfinder.fyi</span><button type="button" id="contactBtn">Contact</button><a href="/privacy.html">Privacy</a></footer>
 </div>
 <dialog id="cd">
