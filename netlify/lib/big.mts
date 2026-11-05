@@ -641,6 +641,7 @@ export const BIG: Reader[] = [
   avature("Lululemon", "https://careers.lululemon.com/en_US/careers"),
   phenom("Dollar Tree", "https://careers.dollartree.com"),
   DEEPMIND,
+  smartrecruiters("LinkedIn", "LinkedIn3"),
 ];
 
 export async function crawlBig(i: number) {
