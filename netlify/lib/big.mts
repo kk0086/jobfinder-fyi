@@ -606,6 +606,12 @@ export const BIG: Reader[] = [
   workable("Progyny", "progyny"),
   jibe("Yelp", "https://community.yelp.careers"),
   workday("Grubhub", "wonder.wd1.myworkdayjobs.com", "wonder", "Grubhub_Careers"),
+  workday("Levi Strauss & Co.", "levistraussandco.wd5.myworkdayjobs.com", "levistraussandco", "External"),
+  workday("Gap Inc.", "gapinc.wd1.myworkdayjobs.com", "gapinc", "GAPINC"),
+  workday("Aritzia", "aritzia.wd3.myworkdayjobs.com", "aritzia", "External"),
+  workday("Saks Fifth Avenue", "saks.wd1.myworkdayjobs.com", "saks", "careers_at_saks"),
+  avature("Lululemon", "https://careers.lululemon.com/en_US/careers"),
+  phenom("Dollar Tree", "https://careers.dollartree.com"),
 ];
 
 export async function crawlBig(i: number) {
