@@ -46,7 +46,7 @@ button{font:inherit;padding:7px 12px;border:1px solid var(--line);border-radius:
 details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px}
 @media (max-width:520px){.bar{grid-template-columns:80px 1fr 34px}.job{grid-template-columns:1fr}.job .r{grid-row:auto;grid-column:1;text-align:left}}
 
-#splash{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--bg,#fff);transition:opacity .35s ease}
+#splash{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(255,255,255,.55);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);pointer-events:none;transition:opacity .35s ease}@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #splash{background:rgba(0,0,0,.5)}}#splash .box{display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px 30px;border-radius:16px;background:var(--card,#fff);border:1px solid var(--line,#e5e7eb);box-shadow:0 10px 30px rgba(0,0,0,.15)}
 #splash.off{opacity:0;pointer-events:none}
 #splash .logo{display:flex;align-items:center;gap:10px;font-size:26px;font-weight:700;letter-spacing:-.5px}
 #splash .ring{position:relative;width:84px;height:84px}
@@ -120,9 +120,8 @@ window.__jp=window.__load(window.__rg);</script>
 </head>
 <body>
 <div id="splash" role="status" aria-live="polite">
-  <div class="logo"><img src="/logo.png" alt="Job Finder" width="269" height="84"></div>
-  <div class="ring"><svg width="84" height="84" viewBox="0 0 84 84"><circle class="bg" cx="42" cy="42" r="38"/><circle class="fg" cx="42" cy="42" r="38"/></svg><div class="num" id="splashn">3</div></div>
-  <div class="msg" id="splashm">Finding open roles for you…</div>
+  <div class="box"><div class="ring"><svg width="84" height="84" viewBox="0 0 84 84"><circle class="bg" cx="42" cy="42" r="38"/><circle class="fg" cx="42" cy="42" r="38"/></svg><div class="num" id="splashn">3</div></div>
+  <div class="msg" id="splashm">Finding open roles for you…</div></div>
 </div>
 <script>(function(){var n=3,el=document.getElementById("splashn"),m=document.getElementById("splashm"),t0=Date.now();
 window.__splash=setInterval(function(){var s=Math.ceil(3-(Date.now()-t0)/1000);if(s>=1)el.textContent=s;else{el.textContent="…";m.textContent="Almost there — loading all roles…"}},200);
