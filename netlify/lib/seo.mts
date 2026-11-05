@@ -116,10 +116,10 @@ footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);color:v
 <h1>${esc(l.h1)}</h1>
 ${l.intro.map(p => `<p>${esc(p)}</p>`).join("")}
 <div class="stats">${stats.map(s => `<span>${s}</span>`).join("")}</div>${payLine}
-<a class="cta" href="/?q=${encodeURIComponent(l.query)}">Click here to search and filter...</a>
+<a class="cta" href="/?q=${encodeURIComponent(l.query)}">Click here to search and filter all ${count.toLocaleString()} roles</a>
 <h2>Latest ${esc(l.h1.replace(/ Jobs$/, ""))} jobs</h2>
 ${rows ? `<ul class="jobs">${rows}</ul>` : "<p>No current openings found. Check back tomorrow.</p>"}
-${count > list.length ? `<p><a class="cta" href="/?q=${encodeURIComponent(l.query)}">Click here to search and filter...</a></p>` : ""}
+${count > list.length ? `<p><a class="cta" href="/?q=${encodeURIComponent(l.query)}">Click here to search and filter all ${count.toLocaleString()} roles</a></p>` : ""}
 <div class="cols"><div class="box"><h3>Top hiring companies</h3><ul>${topCo}</ul></div><div class="box"><h3>Top locations</h3><ul>${topLoc || "<li>Remote and multiple locations</li>"}</ul></div></div>
 <h2>Related searches</h2><div class="rel">${rel}<a href="/">All jobs</a></div>
 <footer><span>&copy; 2026 Jobfinder.fyi</span><span>Jobs updated daily · data as of ${esc(asOf.slice(0, 10))}</span><a href="/">Search all jobs</a><a href="/privacy.html">Privacy</a></footer></div></body></html>`;
