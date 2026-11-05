@@ -50,16 +50,47 @@ export async function loadAll() {
   return { jobs: unique, at, blobs };
 }
 
+async function buildPayload(jobs: Job[], at: string, region: string) {
+  const rows = jobs.filter(j => regionOf((j as any).cc) === region);
+  const { gzipSync } = await import("node:zlib");
+  const seedAt = (seed as any).generated_at as string;
+  return new Uint8Array(gzipSync(Buffer.from(JSON.stringify({ generated_at: at || seedAt, seed_at: seedAt, region, companyCount: new Set(rows.map(j => j.company)).size, jobs: rows }))));
+}
+
+// Prebuilt copies of /api/jobs and the /jobs/<slug> pages, written by snapshot-scheduled so visitors never wait on loadAll().
+const SNAP_MAX_AGE = 6 * 60 * 60 * 1000; // older than this and we rebuild live instead
+const isFresh = (m: any) => m && typeof m.t === "number" && Date.now() - m.t < SNAP_MAX_AGE;
+
+export async function writeSnapshot() {
+  const { LANDINGS, renderLanding } = await import("./seo.mts");
+  const store = getStore("feed");
+  const { jobs, at } = await loadAll();
+  const t = Date.now();
+  for (const r of REGIONS) {
+    const body = await buildPayload(jobs, at, r);
+    await store.set(`snap-jobs-${r}`, body.slice().buffer, { metadata: { t } });
+    cache.set(r, { t, body });
+  }
+  for (const l of LANDINGS) await store.set(`snap-page-${l.slug}`, renderLanding(l, jobs as any, at || new Date().toISOString()).html, { metadata: { t } });
+  return { regions: REGIONS.length, pages: LANDINGS.length, jobs: jobs.length, at };
+}
+
+export async function snapshotPage(slug: string) {
+  const r = await getStore("feed").getWithMetadata(`snap-page-${slug}`, { type: "text" }).catch(() => null);
+  return r && isFresh(r.metadata) ? r.data : null;
+}
+
 // One gzipped payload per region ("us" is the default; roles without a country code are US).
 export async function jobsPayload(region = "us", force = false) {
   if (!REGIONS.includes(region)) region = "us";
   const hit = cache.get(region);
   if (!force && hit && Date.now() - hit.t < 60 * 1000) return hit.body;
+  if (!force) {
+    const r = await getStore("feed").getWithMetadata(`snap-jobs-${region}`, { type: "arrayBuffer" }).catch(() => null);
+    if (r && isFresh(r.metadata)) { const body = new Uint8Array(r.data); cache.set(region, { t: Date.now(), body }); return body; }
+  }
   const { jobs, at } = await loadAll();
-  const rows = jobs.filter(j => regionOf((j as any).cc) === region);
-  const { gzipSync } = await import("node:zlib");
-  const seedAt = (seed as any).generated_at as string;
-  const body = gzipSync(Buffer.from(JSON.stringify({ generated_at: at || seedAt, seed_at: seedAt, region, companyCount: new Set(rows.map(j => j.company)).size, jobs: rows })));
+  const body = await buildPayload(jobs, at, region);
   cache.set(region, { t: Date.now(), body });
   return body;
 }
