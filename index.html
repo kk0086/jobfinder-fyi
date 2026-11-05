@@ -141,11 +141,11 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
   <div class="layout">
   <aside class="side" id="side">
     <div class="sh"><b>Filters</b><button type="button" id="reset">Reset</button></div>
-    <label class="fl"><span>Job Family</span><select id="frole"><option value="">All job families</option><option value="Product management">Product management</option><option value="Software engineering">Software engineering</option><option value="Data engineering">Data engineering, ML &amp; BI</option><option value="Technical program management">Technical program management</option><option value="Program management">Program management</option><option value="UX design">UX design</option><option value="Human resources">Human resources</option><option value="Legal">Legal</option><option value="Financial analyst">Financial analyst</option><option value="Bizdev">Bizdev</option><option value="Marketing">Marketing</option><option value="Operations">Operations</option><option value="Executive leadership">Executive leadership</option></select></label>
+    <div class="fl"><span>Job Family</span><div class="ms" id="frlw"><button type="button" id="frlb"><span id="frll">All job families</span><span>▾</span></button><input type="hidden" id="frole"><div class="pn"><input type="search" id="frls" hidden><div class="ls" id="frlls"></div><div class="ft"><a id="frlclr">Clear</a><a id="frldone">Done</a></div></div></div></div>
     <div class="fl"><span>Companies</span><div class="ms" id="fcw"><button type="button" id="fcb"><span id="fcl">All companies</span><span>▾</span></button><input type="hidden" id="fc"><div class="pn"><input type="search" id="fcs" placeholder="Search companies"><div class="ls" id="fcls"></div><div class="ft"><a id="fcclr">Clear</a><a id="fcdone">Done</a></div></div></div></div>
-    <label class="fl"><span>Domains</span><select id="fdomain"><option value="">All domains</option></select></label>
+    <div class="fl"><span>Domains</span><div class="ms" id="fdw"><button type="button" id="fdb"><span id="fdl">All domains</span><span>▾</span></button><input type="hidden" id="fdomain"><div class="pn"><input type="search" id="fds" placeholder="Search domains"><div class="ls" id="fdls"></div><div class="ft"><a id="fdclr">Clear</a><a id="fddone">Done</a></div></div></div></div>
     <label class="fl" id="fsw"><span>State</span><select id="fs"><option value="">All states</option></select></label>
-    <label class="fl"><span>Seniority</span><select id="fl"><option value="">All seniority</option></select></label>
+    <div class="fl"><span>Seniority</span><div class="ms" id="fsnw"><button type="button" id="fsnb"><span id="fsnl">All seniority</span><span>▾</span></button><input type="hidden" id="fl"><div class="pn"><input type="search" id="fsns" hidden><div class="ls" id="fsnls"></div><div class="ft"><a id="fsnclr">Clear</a><a id="fsndone">Done</a></div></div></div></div>
     <label class="fl"><span>Work Mode</span><select id="fr"><option value="">Remote + onsite</option><option value="1">Remote only</option><option value="0">Onsite only</option></select></label>
     <label class="chk"><input id="ffit" type="checkbox"> Director, Principal, Staff and up</label>
     <label class="chk"><input id="fpay" type="checkbox"> Salary listed</label>
@@ -194,8 +194,8 @@ const prep = j => {
 };
 const RG_LABEL = {all: "", us: "US", ca: "Canadian", uk: "UK", ie: "Irish", emea: "EMEA"};
 const FIT = ["Director", "Executive", "Principal+"];
-const DEFAULTS = {country:"", company:[], state:"", dept:"", level:"", remote:"", q:"", role:"", domain:"", fit:false, pay:false, sort:""};
-const F = {...DEFAULTS, company: []};
+const DEFAULTS = {country:"", company:[], state:"", dept:"", level:[], remote:"", q:"", role:[], domain:[], fit:false, pay:false, sort:""};
+const F = {...DEFAULTS, company: [], role: [], level: [], domain: []};
 let page = 0; const PER = 15;
 
 const ago = ts => {
@@ -214,14 +214,14 @@ function filtered(skip) {
   const STOP = new Set(["and", "of", "the", "for", "a", "an", "in"]);
   const toks = F.q.toLowerCase().split(/\s+/).filter(t => /[a-z0-9]/.test(t) && !STOP.has(t));
   return jobs.filter(j =>
-    (!F.role || j.role === F.role) &&
-    (skip === "domain" || !F.domain || j.domains.includes(F.domain)) &&
+    (!F.role.length || F.role.includes(j.role)) &&
+    (skip === "domain" || !F.domain.length || F.domain.some(d => j.domains.includes(d))) &&
     (!F.fit || FIT.includes(j.seniority)) &&
     (!F.pay || j.salary_min) &&
     (!F.company.length || F.company.includes(j.company)) &&
     (!F.state || j.states.includes(F.state)) &&
     (!F.country || j.ctry === F.country) &&
-    (!F.level || j.seniority === F.level) &&
+    (!F.level.length || F.level.includes(j.seniority)) &&
     (F.remote === "" || (F.remote === "1") === j.remote) &&
     (!toks.length || (hay => toks.every(t => t.length > 3 ? hay.includes(t) : new RegExp("(^|[^a-z0-9])" + t.replace(/[^a-z0-9]/g, "") + "([^a-z0-9]|$)").test(hay)))((j.title + " " + j.company + " " + j.location + " " + j.department).toLowerCase()))
   ).sort(F.pay && F.sort ? (a, b) => ((b.salary_min + b.salary_max) - (a.salary_min + a.salary_max)) * (F.sort === "lo" ? -1 : 1) : (a, b) => (FIT.includes(b.seniority) - FIT.includes(a.seniority)) || ((b.ts || 0) - (a.ts || 0)));
@@ -232,44 +232,47 @@ function fillSelect(id, entries) {
   el.innerHTML = first + entries.map(([k, n]) => `<option value="${esc(k)}">${esc(k)} (${n})</option>`).join("");
 }
 
-let MS = [];
-function msInit(entries) {
-  MS = entries;
-  const w = $("fcw"), draw = () => {
-    const t = $("fcs").value.trim().toLowerCase();
-    $("fcls").innerHTML = MS.filter(([k]) => !t || k.toLowerCase().includes(t)).slice(0, 400).map(([k, n]) => `<label title="${esc(k)}"><span>${esc(k)}</span><span class="n">${n}</span><input type="checkbox" value="${esc(k)}" ${F.company.includes(k) ? "checked" : ""}></label>`).join("") || '<div class="meta">No match</div>';
+const MSR = [];
+function msMake(b, hid, key, all, noun, entries, labels = {}, search = true) {
+  let ents = entries; const w = $(b + "w"), lab = k => labels[k] || k, sIn = $(b + "s");
+  const draw = () => {
+    const t = search ? sIn.value.trim().toLowerCase() : "";
+    const box = $(b + "ls"), st = box.scrollTop; box.innerHTML = ents.filter(([k]) => !t || lab(k).toLowerCase().includes(t)).slice(0, 400).map(([k, n]) => `<label title="${esc(lab(k))}"><span>${esc(lab(k))}</span><span class="n">${n}</span><input type="checkbox" value="${esc(k)}" ${F[key].includes(k) ? "checked" : ""}></label>`).join("") || '<div class="meta">No match</div>'; box.scrollTop = st;
   };
   w.draw = draw; draw();
-  $("fcb").onclick = () => { w.classList.toggle("open"); if (w.classList.contains("open")) { const pn = w.querySelector(".pn"); pn.style.left = "0"; pn.style.right = "auto"; const r = w.getBoundingClientRect(); if (r.left + pn.offsetWidth > innerWidth - 8) { pn.style.left = "auto"; pn.style.right = "0"; if (r.right - pn.offsetWidth < 8) { pn.style.right = "auto"; pn.style.left = (8 - r.left) + "px"; } } draw(); $("fcs").focus(); } };
-  $("fcs").oninput = draw;
-  $("fcls").addEventListener("change", e => {
-    const v = e.target.value; F.company = e.target.checked ? [...F.company, v] : F.company.filter(x => x !== v);
-    page = 0; const h = $("fc"); h.value = F.company.join(", "); h.dispatchEvent(new Event("change", { bubbles: true })); msSync(true); render();
+  w.setEntries = e => { ents = e; draw(); };
+  w.sync = keep => {
+    const n = F[key].length;
+    $(b + "l").textContent = n === 0 ? all : n === 1 ? lab(F[key][0]) : n + " " + noun;
+    $(b + "b").classList.toggle("on", n > 0);
+    if (!keep) draw();
+  };
+  if (search) sIn.oninput = draw; else sIn.remove();
+  $(b + "b").onclick = () => { w.classList.toggle("open"); if (w.classList.contains("open")) { const pn = w.querySelector(".pn"); pn.style.left = "0"; pn.style.right = "auto"; const r = w.getBoundingClientRect(); if (r.left + pn.offsetWidth > innerWidth - 8) { pn.style.left = "auto"; pn.style.right = "0"; if (r.right - pn.offsetWidth < 8) { pn.style.right = "auto"; pn.style.left = (8 - r.left) + "px"; } } draw(); if (search) sIn.focus(); } };
+  $(b + "ls").addEventListener("change", e => {
+    const v = e.target.value; F[key] = e.target.checked ? [...F[key], v] : F[key].filter(x => x !== v);
+    page = 0; const h = $(hid); h.value = F[key].join(", "); h.dispatchEvent(new Event("change", { bubbles: true })); w.sync(true); render();
   });
-  $("fcclr").onclick = () => { F.company = []; page = 0; msSync(); render(); };
-  $("fcdone").onclick = () => w.classList.remove("open");
+  $(b + "clr").onclick = () => { F[key] = []; page = 0; w.sync(); render(); };
+  $(b + "done").onclick = () => w.classList.remove("open");
   document.addEventListener("click", e => { if (!w.contains(e.target)) w.classList.remove("open"); });
   document.addEventListener("keydown", e => { if (e.key === "Escape") w.classList.remove("open"); });
+  MSR.push(w);
 }
-function msSync(keep) {
-  const n = F.company.length;
-  $("fcl").textContent = n === 0 ? "All companies" : n === 1 ? F.company[0] : n + " companies";
-  $("fcb").classList.toggle("on", n > 0);
-  if (!keep && $("fcw").draw) $("fcw").draw();
-}
+function msSync(keep) { MSR.forEach(w => w.sync(keep)); }
 
 function bars(title, entries, key, max = 5) {
   const top = entries.slice(0, max), peak = top[0] ? top[0][1] : 1;
   return `<div class="card"><h2>${title}</h2>${top.map(([k, n]) =>
-    `<div class="bar ${(key === "company" ? F.company.includes(k) : F[key] === k) ? "on" : ""}" data-k="${key}" data-v="${esc(k)}" title="Filter by ${esc(k)}"><span class="l">${esc(k)}</span><span class="t"><i style="width:${n / peak * 100}%"></i></span><span class="n">${n}</span></div>`).join("")}</div>`;
+    `<div class="bar ${(Array.isArray(F[key]) ? F[key].includes(k) : F[key] === k) ? "on" : ""}" data-k="${key}" data-v="${esc(k)}" title="Filter by ${esc(k)}"><span class="l">${esc(k)}</span><span class="t"><i style="width:${n / peak * 100}%"></i></span><span class="n">${n}</span></div>`).join("")}</div>`;
 }
 
 function render() {
   const rows = filtered();
   // Domain options and the domain chart count roles under every other active filter, so they work as a navigator.
   const base = filtered("domain"), dcount = count(base, j => j.domains);
-  $("fdomain").innerHTML = '<option value="">All domains (' + base.length + ')</option>' + dcount.map(([k, n]) => `<option value="${esc(k)}">${esc(k)} (${n})</option>`).join("");
-  $("fdomain").value = F.domain;
+  const dm = new Map(dcount); F.domain.forEach(k => { if (!dm.has(k)) dcount.push([k, 0]); });
+  $("fdw").setEntries(dcount);
   const week = rows.filter(j => j.ts && NOW - j.ts <= 7 * DAY).length;
   $("tiles").innerHTML = [
     [rows.length.toLocaleString(), ("open " + (RG_LABEL[window.__rg] || "") + " roles (matching)").replace("  ", " ")],
@@ -319,23 +322,26 @@ function init() {
   });
   $("sgo").onclick = () => { page = 0; render(); $("count").scrollIntoView({ block: "start", behavior: "smooth" }); };
   $("ftog").onclick = () => { const o = $("side").classList.toggle("open"); $("ftog").setAttribute("aria-expanded", o); };
-  msInit(count(jobs, j => j.company));
+  msMake("fd", "fdomain", "domain", "All domains", "domains", []);
+  msMake("fc", "fc", "company", "All companies", "companies", count(jobs, j => j.company));
+  const FAM = {"Data engineering": "Data engineering, ML & BI"}, FORD = ["Product management", "Software engineering", "Data engineering", "Technical program management", "Program management", "UX design", "Human resources", "Legal", "Financial analyst", "Bizdev", "Marketing", "Operations", "Executive leadership"];
+  const rc = new Map(count(jobs, j => j.role)); msMake("frl", "frole", "role", "All job families", "job families", FORD.filter(k => rc.get(k)).map(k => [k, rc.get(k)]), FAM, false);
+  const SORD = ["Intern", "Entry", "Mid", "Senior", "Manager", "Director", "Principal+", "Executive"], sc = new Map(count(jobs, j => j.seniority)); msMake("fsn", "fl", "level", "All seniority", "levels", [...SORD, ...[...sc.keys()].filter(k => !SORD.includes(k))].filter(k => sc.get(k)).map(k => [k, sc.get(k)]), {}, false);
   fillSelect("fs", count(jobs, j => j.states));
-  fillSelect("fl", count(jobs, j => j.seniority));
   const bind = (id, key, ev = "change") => $(id).addEventListener(ev, e => { F[key] = e.target.value; page = 0; sync(); render(); });
-  bind("frole", "role"); bind("fdomain", "domain"); $("ffit").addEventListener("change", e => { F.fit = e.target.checked; page = 0; render(); }); $("fpay").addEventListener("change", e => { F.pay = e.target.checked; if (!F.pay) { F.sort = ""; $("fsort").value = ""; } page = 0; render(); }); $("fsort").addEventListener("change", e => { F.sort = e.target.value; page = 0; render(); });
-  bind("fs", "state"); bind("fl", "level"); bind("fr", "remote"); bind("q", "q", "input");
-  $("reset").onclick = () => { Object.assign(F, DEFAULTS, { company: [] }); $("q").value = ""; page = 0; sync(); render(); };
+  $("ffit").addEventListener("change", e => { F.fit = e.target.checked; page = 0; render(); }); $("fpay").addEventListener("change", e => { F.pay = e.target.checked; if (!F.pay) { F.sort = ""; $("fsort").value = ""; } page = 0; render(); }); $("fsort").addEventListener("change", e => { F.sort = e.target.value; page = 0; render(); });
+  bind("fs", "state"); bind("fr", "remote"); bind("q", "q", "input");
+  $("reset").onclick = () => { Object.assign(F, DEFAULTS, { company: [], role: [], level: [], domain: [] }); $("q").value = ""; page = 0; sync(); render(); };
   const pgClick = e => { const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return; page += +b.dataset.pg; render(); (e.currentTarget.id === "pgBot" ? $("count") : $("pgTop")).scrollIntoView({ block: "start" }); };
   $("pgTop").onclick = pgClick; $("pgBot").onclick = pgClick;
   $("charts").addEventListener("click", e => {
     const b = e.target.closest(".bar[data-k]"); if (!b) return;
-    const k = b.dataset.k, v = b.dataset.v; if (k === "company") F.company = F.company.includes(v) ? F.company.filter(x => x !== v) : [...F.company, v]; else F[k] = F[k] === v ? "" : v; page = 0; sync(); render();
+    const k = b.dataset.k, v = b.dataset.v; if (Array.isArray(F[k])) F[k] = F[k].includes(v) ? F[k].filter(x => x !== v) : [...F[k], v]; else F[k] = F[k] === v ? "" : v; page = 0; sync(); render();
   });
   render();
 }
 function chips() { document.querySelectorAll("#pop button").forEach(b => b.classList.toggle("on", b.dataset.remote ? F.remote === "1" : (b.dataset.q && F.q === b.dataset.q))); }
-function sync() { chips(); $("frole").value = F.role; $("fdomain").value = F.domain; $("ffit").checked = F.fit; $("fpay").checked = F.pay; $("fsort").value = F.sort; msSync(); $("fs").value = F.state; $("fl").value = F.level; $("fr").value = F.remote; }
+function sync() { chips(); $("ffit").checked = F.fit; $("fpay").checked = F.pay; $("fsort").value = F.sort; msSync(); $("fs").value = F.state; $("fr").value = F.remote; }
 async function boot() {
   if (DATA.live) {
     $("list").innerHTML = '<div class="meta">Loading jobs…</div>';
