@@ -603,6 +603,8 @@ export const BIG: Reader[] = [
   workday("Marvell", "marvell.wd1.myworkdayjobs.com", "marvell", "MarvellCareers"),
   phenom("Warner Bros. Discovery", "https://careers.wbd.com", "global/en"),
   workable("Bayut", "bayutdubizzle"),
+  jibe("Yelp", "https://community.yelp.careers"),
+  workday("Grubhub", "wonder.wd1.myworkdayjobs.com", "wonder", "Grubhub_Careers"),
 ];
 
 export async function crawlBig(i: number) {
