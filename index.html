@@ -146,9 +146,8 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
     <div class="fl"><span>Domains</span><div class="ms" id="fdw"><button type="button" id="fdb"><span id="fdl">All domains</span><span>▾</span></button><input type="hidden" id="fdomain"><div class="pn"><input type="search" id="fds" placeholder="Search domains"><div class="ls" id="fdls"></div><div class="ft"><a id="fdclr">Clear</a><a id="fddone">Done</a></div></div></div></div>
     <label class="fl" id="fsw"><span>State</span><select id="fs"><option value="">All states</option></select></label>
     <div class="fl"><span>Seniority</span><div class="ms" id="fsnw"><button type="button" id="fsnb"><span id="fsnl">All seniority</span><span>▾</span></button><input type="hidden" id="fl"><div class="pn"><input type="search" id="fsns" hidden><div class="ls" id="fsnls"></div><div class="ft"><a id="fsnclr">Clear</a><a id="fsndone">Done</a></div></div></div></div>
+    <div class="fl"><span>Salary</span><div class="ms" id="fpyw"><button type="button" id="fpyb"><span id="fpyl">Any salary</span><span>▾</span></button><input type="hidden" id="fpay"><div class="pn"><input type="search" id="fpys" hidden><div class="ls" id="fpyls"></div><div class="ft"><a id="fpyclr">Clear</a><a id="fpydone">Done</a></div></div></div></div>
     <label class="fl"><span>Work Mode</span><select id="fr"><option value="">Remote + onsite</option><option value="1">Remote only</option><option value="0">Onsite only</option></select></label>
-    <label class="chk"><input id="ffit" type="checkbox"> Director, Principal, Staff and up</label>
-    <label class="chk"><input id="fpay" type="checkbox"> Salary listed</label>
   </aside>
   <main class="main">
   <div class="sub" id="asof"></div>
@@ -193,9 +192,11 @@ const prep = j => {
   return {...j, ctry: j.cc ? j.states[0] : "United States", ts: p ?? u, tsKind: p ? "Posted" : (u ? "Updated" : "")};
 };
 const RG_LABEL = {all: "", us: "US", ca: "Canadian", uk: "UK", ie: "Irish", emea: "EMEA"};
+const BANDS = [["u100", "Under $100K"], ["100", "$100K–$150K"], ["150", "$150K–$200K"], ["200", "$200K and up"]];
+const BAND = j => { const k = (j.salary_min + (j.salary_max || j.salary_min)) / 2000; return k < 100 ? "u100" : k < 150 ? "100" : k < 200 ? "150" : "200"; };
 const FIT = ["Director", "Executive", "Principal+"];
-const DEFAULTS = {country:"", company:[], state:"", dept:"", level:[], remote:"", q:"", role:[], domain:[], fit:false, pay:false, sort:""};
-const F = {...DEFAULTS, company: [], role: [], level: [], domain: []};
+const DEFAULTS = {country:"", company:[], state:"", dept:"", level:[], remote:"", q:"", role:[], domain:[], pay:[], sort:""};
+const F = {...DEFAULTS, company: [], role: [], level: [], domain: [], pay: []};
 let page = 0; const PER = 15;
 
 const ago = ts => {
@@ -216,15 +217,14 @@ function filtered(skip) {
   return jobs.filter(j =>
     (!F.role.length || F.role.includes(j.role)) &&
     (skip === "domain" || !F.domain.length || F.domain.some(d => j.domains.includes(d))) &&
-    (!F.fit || FIT.includes(j.seniority)) &&
-    (!F.pay || j.salary_min) &&
+    (!F.pay.length || (j.salary_min && F.pay.includes(BAND(j)))) &&
     (!F.company.length || F.company.includes(j.company)) &&
     (!F.state || j.states.includes(F.state)) &&
     (!F.country || j.ctry === F.country) &&
     (!F.level.length || F.level.includes(j.seniority)) &&
     (F.remote === "" || (F.remote === "1") === j.remote) &&
     (!toks.length || (hay => toks.every(t => t.length > 3 ? hay.includes(t) : new RegExp("(^|[^a-z0-9])" + t.replace(/[^a-z0-9]/g, "") + "([^a-z0-9]|$)").test(hay)))((j.title + " " + j.company + " " + j.location + " " + j.department).toLowerCase()))
-  ).sort(F.pay && F.sort ? (a, b) => ((b.salary_min + b.salary_max) - (a.salary_min + a.salary_max)) * (F.sort === "lo" ? -1 : 1) : (a, b) => (FIT.includes(b.seniority) - FIT.includes(a.seniority)) || ((b.ts || 0) - (a.ts || 0)));
+  ).sort(F.pay.length && F.sort ? (a, b) => ((b.salary_min + b.salary_max) - (a.salary_min + a.salary_max)) * (F.sort === "lo" ? -1 : 1) : (a, b) => (FIT.includes(b.seniority) - FIT.includes(a.seniority)) || ((b.ts || 0) - (a.ts || 0)));
 }
 
 function fillSelect(id, entries) {
@@ -295,7 +295,7 @@ function render() {
   const pages = Math.max(1, Math.ceil(rows.length / PER));
   if (page >= pages) page = pages - 1;
   const lo = page * PER;
-  $("sortw").hidden = !F.pay;
+  $("sortw").hidden = !F.pay.length;
   $("count").textContent = `${rows.length.toLocaleString()} roles` + (rows.length > PER ? `, showing ${lo + 1}–${Math.min(rows.length, lo + PER)}` : "");
   const pg = rows.length > PER ? `<button data-pg="-1" ${page === 0 ? "disabled" : ""}>← Previous</button><span>Page ${page + 1} of ${pages}</span><button data-pg="1" ${page >= pages - 1 ? "disabled" : ""}>Next →</button>` : "";
   $("pgTop").innerHTML = pg; $("pgBot").innerHTML = pg;
@@ -326,12 +326,13 @@ function init() {
   msMake("fc", "fc", "company", "All companies", "companies", count(jobs, j => j.company));
   const FAM = {"Data engineering": "Data engineering, ML & BI"}, FORD = ["Product management", "Software engineering", "Data engineering", "Technical program management", "Program management", "UX design", "Human resources", "Legal", "Financial analyst", "Bizdev", "Marketing", "Operations", "Executive leadership"];
   const rc = new Map(count(jobs, j => j.role)); msMake("frl", "frole", "role", "All job families", "job families", FORD.filter(k => rc.get(k)).map(k => [k, rc.get(k)]), FAM, false);
+  { const pc = count(jobs.filter(j => j.salary_min), BAND); msMake("fpy", "fpay", "pay", "Any salary", "salary ranges", BANDS.map(([k]) => [k, (pc.find(x => x[0] === k) || [0, 0])[1]]), Object.fromEntries(BANDS), false); }
   const SORD = ["Intern", "Entry", "Mid", "Senior", "Manager", "Director", "Principal+", "Executive"], sc = new Map(count(jobs, j => j.seniority)); msMake("fsn", "fl", "level", "All seniority", "levels", [...SORD, ...[...sc.keys()].filter(k => !SORD.includes(k))].filter(k => sc.get(k)).map(k => [k, sc.get(k)]), {}, false);
   fillSelect("fs", count(jobs, j => j.states));
   const bind = (id, key, ev = "change") => $(id).addEventListener(ev, e => { F[key] = e.target.value; page = 0; sync(); render(); });
-  $("ffit").addEventListener("change", e => { F.fit = e.target.checked; page = 0; render(); }); $("fpay").addEventListener("change", e => { F.pay = e.target.checked; if (!F.pay) { F.sort = ""; $("fsort").value = ""; } page = 0; render(); }); $("fsort").addEventListener("change", e => { F.sort = e.target.value; page = 0; render(); });
+  $("fpay").addEventListener("change", () => { if (!F.pay.length) { F.sort = ""; $("fsort").value = ""; } }); $("fsort").addEventListener("change", e => { F.sort = e.target.value; page = 0; render(); });
   bind("fs", "state"); bind("fr", "remote"); bind("q", "q", "input");
-  $("reset").onclick = () => { Object.assign(F, DEFAULTS, { company: [], role: [], level: [], domain: [] }); $("q").value = ""; page = 0; sync(); render(); };
+  $("reset").onclick = () => { Object.assign(F, DEFAULTS, { company: [], role: [], level: [], domain: [], pay: [] }); $("q").value = ""; page = 0; sync(); render(); };
   const pgClick = e => { const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return; page += +b.dataset.pg; render(); (e.currentTarget.id === "pgBot" ? $("count") : $("pgTop")).scrollIntoView({ block: "start" }); };
   $("pgTop").onclick = pgClick; $("pgBot").onclick = pgClick;
   $("charts").addEventListener("click", e => {
@@ -341,7 +342,7 @@ function init() {
   render();
 }
 function chips() { document.querySelectorAll("#pop button").forEach(b => b.classList.toggle("on", b.dataset.remote ? F.remote === "1" : (b.dataset.q && F.q === b.dataset.q))); }
-function sync() { chips(); $("ffit").checked = F.fit; $("fpay").checked = F.pay; $("fsort").value = F.sort; msSync(); $("fs").value = F.state; $("fr").value = F.remote; }
+function sync() { chips(); $("fsort").value = F.sort; msSync(); $("fs").value = F.state; $("fr").value = F.remote; }
 async function boot() {
   if (DATA.live) {
     $("list").innerHTML = '<div class="meta">Loading jobs…</div>';
