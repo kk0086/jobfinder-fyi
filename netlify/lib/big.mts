@@ -560,6 +560,34 @@ export function fromSpec(s: Spec): Reader {
   throw new Error("unknown kind");
 }
 
+// Google DeepMind: its roles live on Google's careers site, filtered with company=DeepMind (same embedded data as GOOGLE).
+const DEEPMIND: Reader = { name: "Google DeepMind", run: async () => {
+  const base = "https://www.google.com/about/careers/applications/jobs/results/";
+  const get = async (page: number) => {
+    const r = await fetch(`${base}?company=DeepMind&location=United%20States&page=${page}`, { headers: { "user-agent": UA["user-agent"], "accept-language": "en-US" }, signal: AbortSignal.timeout(14000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const h = await r.text();
+    const a = h.indexOf("AF_initDataCallback({key: 'ds:1'"); if (a < 0) return { rows: [] as any[], total: 0 };
+    const d = h.indexOf("data:", a) + 5, e = h.indexOf(", sideChannel", d);
+    const data = JSON.parse(h.slice(d, e));
+    return { rows: (data?.[0] || []) as any[], total: Number(data?.[2] || 0) };
+  };
+  const seen = new Map<string, RawJob>();
+  const add = (rows: any[]) => { for (const e of rows) {
+    const id = e?.[0], title = e?.[1]; if (!id || !title) continue;
+    const locs = (e as any[]).find(x => Array.isArray(x) && x.length && Array.isArray(x[0]) && typeof x[0][0] === "string" && x[0].length >= 6 && x[0][x[0].length - 1].length === 2);
+    const us = (locs || []).filter((l: any[]) => l[l.length - 1] === "US");
+    if (!us.length) continue;
+    const slug = String(title).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    seen.set(id, { company: "Google DeepMind", title, location: us.map((l: any[]) => l[0]).join("; "), department: "", url: `${base}${id}-${slug}`, posted: null });
+  } };
+  const first = await get(1); add(first.rows);
+  const pages = Math.min(Math.ceil((first.total || 0) / 20), 15);
+  await pool(range(2, pages + 1, 1), 3, async p => { add((await get(p)).rows); });
+  if (!seen.size) throw new Error("no DeepMind roles");
+  return { raw: [...seen.values()], assumeUS: true };
+} };
+
 export const BIG: Reader[] = [
   AMAZON,
   eightfold("Microsoft", "apply.careers.microsoft.com", "microsoft.com", "https://apply.careers.microsoft.com/careers/job", QUERIES, 30),
@@ -612,6 +640,7 @@ export const BIG: Reader[] = [
   workday("Saks Fifth Avenue", "saks.wd1.myworkdayjobs.com", "saks", "careers_at_saks"),
   avature("Lululemon", "https://careers.lululemon.com/en_US/careers"),
   phenom("Dollar Tree", "https://careers.dollartree.com"),
+  DEEPMIND,
 ];
 
 export async function crawlBig(i: number) {
