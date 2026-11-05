@@ -314,6 +314,21 @@ function avature(name: string, origin: string, cap = 3000, assumeUS = true): Rea
   } };
 }
 
+// Workable career sites (apply.workable.com/<slug>): public JSON search API, paged by token.
+function workable(name: string, slug: string, assumeUS = false): Reader {
+  return { name, run: async () => {
+    const raw: RawJob[] = [];
+    let token: string | undefined;
+    for (let i = 0; i < 12; i++) {
+      const j: any = await jget(`https://apply.workable.com/api/v3/accounts/${slug}/jobs`, { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify({ query: "", location: [], department: [], worktype: [], remote: [], ...(token ? { token } : {}) }) });
+      for (const x of j?.results || []) raw.push({ company: name, title: x.title, department: (x.department || [])[0] || "", location: [x.location?.city, x.location?.region, x.location?.country].filter(Boolean).join(", "), url: `https://apply.workable.com/${slug}/j/${x.shortcode}/`, posted: x.published || null, remote: x.remote === true || /remote/i.test(x.workplace || "") ? true : null });
+      token = j?.nextPage; if (!token) break;
+    }
+    if (!raw.length) throw new Error("no jobs read");
+    return { raw, assumeUS };
+  } };
+}
+
 // Phenom People career sites (eBay, Chewy, Cisco, Lowe's, UPS, ...): /widgets search API, 100 per page.
 function phenom(name: string, origin: string, locale = "us/en", cap = 2000): Reader {
   const [cc, lang] = locale.split("/");
@@ -523,7 +538,7 @@ const SHOPIFY: Reader = { name: "Shopify", run: async () => {
   return { raw: out };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "bytedance" | "avature"; name: string; [k: string]: any };
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "bytedance" | "avature" | "workable"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -536,6 +551,7 @@ export function fromSpec(s: Spec): Reader {
     case "builtin": { const b = BIG.find(x => x.name === s.name); if (!b) throw new Error("not found"); return b; }
     case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
     case "avature": return avature(s.name, s.origin, s.cap || 3000, s.assumeUS !== false);
+    case "workable": return workable(s.name, s.slug, !!s.assumeUS);
     case "taleo": return taleo(s.name, s.host, s.org, String(s.cws));
     case "vaia": return vaia(s.name, s.page);
     case "bytedance": return bytedance(s.name, s.origin);
@@ -583,6 +599,10 @@ export const BIG: Reader[] = [
   workday("Overstock", "overstock.wd5.myworkdayjobs.com", "overstock", "BedBathandBeyond_Careers"),
   workday("JD.com", "jd.wd103.myworkdayjobs.com", "jd", "Careers_at_JD"),
   workday("Rakuten", "rakuten.wd1.myworkdayjobs.com", "rakuten", "RakutenAmericas"),
+  smartrecruiters("Mattel", "MattelInc"),
+  workday("Marvell", "marvell.wd1.myworkdayjobs.com", "marvell", "MarvellCareers"),
+  phenom("Warner Bros. Discovery", "https://careers.wbd.com", "global/en"),
+  workable("Bayut", "bayutdubizzle"),
 ];
 
 export async function crawlBig(i: number) {
