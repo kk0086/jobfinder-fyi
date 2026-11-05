@@ -30,7 +30,7 @@ function workday(name: string, host: string, tenant: string, site: string, cap =
   const base = `https://${host}/en-US/${site}`;
   const post = (body: object) => jget(api, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   return { name, run: async () => {
-    const first = await post({ appliedFacets: {}, limit: 1, offset: 0, searchText: "" });
+    const first = await post({ appliedFacets: {}, limit: 20, offset: 0, searchText: "" });
     // Find the "United States" country facet so only US roles are paged.
     let facets: Record<string, string[]> = {};
     for (const f of first.facets || []) {
