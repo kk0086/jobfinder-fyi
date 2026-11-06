@@ -47,7 +47,9 @@ async function sendCode(email: string, code: string, kind: "signup" | "reset") {
 export default async (req: Request, context: Context) => {
   const path = new URL(req.url).pathname.replace(/\/+$/, "");
   const action = path.split("/").pop();
-  const users = getStore("users"), codes = getStore("authcodes"), sess = getStore("authsess");
+  // Strong consistency: a code, account or session must be readable right after it is written (eventual reads can miss it).
+  const store = (name: string) => getStore({ name, consistency: "strong" });
+  const users = store("users"), codes = store("authcodes"), sess = store("authsess");
   const ip = sha(String(context.ip || req.headers.get("x-nf-client-connection-ip") || "?"));
   const hour = Math.floor(Date.now() / 3_600_000);
 
