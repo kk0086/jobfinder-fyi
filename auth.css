@@ -22,3 +22,4 @@ input:focus,select:focus,.ms>button:focus{outline:2px solid var(--teal);outline-
 .pwbox{position:relative}.pwbox input{padding-right:64px}.pwbox .show{position:absolute;right:6px;top:6px;height:32px;padding:0 10px;border:0;background:transparent;color:var(--teal);font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}
 input[type=password]{height:44px;width:100%;padding:0 12px;border:1px solid var(--line);border-radius:8px;font-size:15px;background:var(--card);color:var(--ink);font-family:inherit}input[type=password]:focus{outline:2px solid var(--teal);outline-offset:1px}
 .fl{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:2px 0 14px;font-size:13px}.fl .chk{margin:0}
+.note{margin:-8px 0 16px;padding:10px 12px;border-radius:8px;background:var(--chip);color:var(--ink);font-size:14px}
