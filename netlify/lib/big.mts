@@ -294,9 +294,9 @@ function jibe(name: string, origin: string, all = false): Reader {
 }
 
 // Avature career sites (Deloitte): the search page lists 100 jobs per page as HTML articles (link, title, location in the last subtitle span).
-function avature(name: string, origin: string, cap = 3000, assumeUS = true): Reader {
+function avature(name: string, origin: string, cap = 3000, assumeUS = true, path = "SearchJobs"): Reader {
   const page = async (o: number): Promise<RawJob[]> => {
-    const r = await fetch(`${origin}/SearchJobs/?jobRecordsPerPage=100&jobOffset=${o}&folderRecordsPerPage=100&folderOffset=${o}`, { headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html" }, signal: AbortSignal.timeout(20000) });
+    const r = await fetch(`${origin}/${path}/?jobRecordsPerPage=100&jobOffset=${o}&folderRecordsPerPage=100&folderOffset=${o}`, { headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html" }, signal: AbortSignal.timeout(20000) });
     if (!r.ok) return [];
     const html = await r.text();
     const dec = (x: string) => x.replace(/&amp;/g, "&").replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
@@ -550,7 +550,7 @@ export function fromSpec(s: Spec): Reader {
     case "smartrecruiters": return smartrecruiters(s.name, s.id);
     case "builtin": { const b = BIG.find(x => x.name === s.name); if (!b) throw new Error("not found"); return b; }
     case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
-    case "avature": return avature(s.name, s.origin, s.cap || 3000, s.assumeUS !== false);
+    case "avature": return avature(s.name, s.origin, s.cap || 3000, s.assumeUS !== false, (s as any).path || "SearchJobs");
     case "workable": return workable(s.name, s.slug, !!s.assumeUS);
     case "taleo": return taleo(s.name, s.host, s.org, String(s.cws));
     case "vaia": return vaia(s.name, s.page);
