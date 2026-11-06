@@ -61,13 +61,26 @@ export default async (req: Request, context: Context) => {
     return setCookie(token, keep ? KEEP_TTL / 1000 : null);
   };
 
+  // One-time baseline: every existing account needed a code, so start the counter at the number of accounts.
+  const codeCount = async (bump: boolean) => {
+    let n = Number(await users.get("stat/codesSent") || 0);
+    if (!(await users.get("stat/codesSeeded"))) {
+      const { blobs } = await users.list({ prefix: "u/" });
+      n = Math.max(n, blobs.length);
+      await users.set("stat/codesSeeded", "1");
+    }
+    if (bump) n++;
+    await users.set("stat/codesSent", String(n));
+    return n;
+  };
+
   // Owner-only: list members (for ads/exports). Password hashes are never included.
   if (action === "users" && req.method === "GET") {
     if (!isOwner(req)) return new Response("Unauthorized", { status: 401 });
     const out: any[] = [];
     const { blobs } = await users.list({ prefix: "u/" });
     for (let i = 0; i < blobs.length; i += 50) out.push(...(await Promise.all(blobs.slice(i, i + 50).map(b => users.get(b.key, { type: "json" })))).filter(Boolean).map((u: any) => { const { pw, ...rest } = u; return rest; }));
-    return json({ count: out.length, users: out, codesSent: Number(await users.get("stat/codesSent") || 0) });
+    return json({ count: out.length, users: out, codesSent: await codeCount(false) });
   }
 
   if (action === "me" && req.method === "GET") {
@@ -154,7 +167,7 @@ export default async (req: Request, context: Context) => {
     const code = String(randomInt(0, 1_000_000)).padStart(6, "0"), salt = randomBytes(8).toString("hex");
     await codes.setJSON("c/" + uid, { kind, salt, hash: sha(salt + code), exp: now + CODE_TTL, tries: 0, sends: [...sends, now], ...extra });
     try { await sendCode(email, code, kind); } catch { return json({ error: "We couldn't send the email right now. Please try again." }, 502); }
-    if (kind === "signup") { try { await users.set("stat/codesSent", String(Number(await users.get("stat/codesSent") || 0) + 1)); } catch {} }
+    if (kind === "signup") { try { await codeCount(true); } catch {} }
     return null;
   };
   // Checks a submitted code; returns the record on success, or an error Response.
