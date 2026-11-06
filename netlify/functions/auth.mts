@@ -113,7 +113,14 @@ export default async (req: Request, context: Context) => {
     else if (op === "unsave") jl.saved = drop(jl.saved);
     else if (op === "apply" && !has(jl.applied)) { if (jl.applied.length >= MAXJ) return json({ error: "You've reached the limit of 500 applied jobs." }, 400); jl.applied.unshift(rec); }
     else if (op === "unapply") jl.applied = drop(jl.applied);
-    else if (!["save", "unsave", "apply", "unapply"].includes(op)) return json({ error: "Bad request" }, 400);
+    else if (op === "flag") {
+      const FL = ["interview", "offer", "accepted"], f = String(q.flag), item = jl.applied.find((x: any) => x.url === url);
+      if (!FL.includes(f) || !item) return json({ error: "Bad request" }, 400);
+      item[f] = !!q.value;
+      if (f === "accepted" && item.accepted) item.offer = true; // accepting implies an offer
+      if (f === "offer" && !item.offer) item.accepted = false;
+    }
+    else if (!["save", "unsave", "apply", "unapply", "flag"].includes(op)) return json({ error: "Bad request" }, 400);
     await ujobs.setJSON(uidm, jl);
     return json({ ok: true, saved: jl.saved.length, applied: jl.applied.length });
   }
