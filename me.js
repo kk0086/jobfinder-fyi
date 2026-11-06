@@ -10,9 +10,9 @@ var page=document.body.getAttribute("data-page");
 if(page==="account"){
   api("me").then(function(r){var u=r.d&&r.d.user;if(!u){location.href="/login.html?next="+next;return}
     $("nm").textContent=(u.firstName+" "+(u.lastName||"")).trim();$("mail").textContent=u.email;$("created").textContent=fmt(u.createdAt);
-    $("jt").value=u.jobTitle;$("cc").value=u.currentCompany;$("pc").value=u.previousCompany;$("form").hidden=false});
+    $("jt").value=u.jobTitle;$("cc").value=u.currentCompany;$("pc").value=u.previousCompany;$("sal").value=u.salaryMin;$("wa").value=u.workAuth;$("form").hidden=false});
   $("form").onsubmit=function(e){e.preventDefault();$("err").textContent="";$("okm").textContent="";var b=$("go");b.disabled=true;
-    api("profile",{jobTitle:$("jt").value,currentCompany:$("cc").value,previousCompany:$("pc").value}).then(function(r){b.disabled=false;if(!gate(r))return;
+    api("profile",{jobTitle:$("jt").value,currentCompany:$("cc").value,previousCompany:$("pc").value,salaryMin:$("sal").value,workAuth:$("wa").value}).then(function(r){b.disabled=false;if(!gate(r))return;
       if(!r.ok)return $("err").textContent=r.d.error||"Something went wrong. Please try again.";$("okm").textContent="Saved."}).catch(function(){b.disabled=false;$("err").textContent="Something went wrong. Please try again."})};
 }
 

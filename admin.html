@@ -80,7 +80,7 @@ async function loadUsers(){try{const r=await fetch("/api/auth/users",{headers:{"
  }catch(e){$("usum").textContent=String(e.message||e)}}
 function exportUsers(fmt){if(!USERS.length){$("uMsg").textContent="No members to download.";return}const stamp=new Date().toISOString().slice(0,10);let blob,name;
  if(fmt==="json"){blob=new Blob([JSON.stringify(USERS)],{type:"application/json"});name=`jobfinder-members-${stamp}.json`}
- else{const cols=["createdAt","firstName","lastName","email","country","zip","jobFamilies","seniority","searchStatus","marketingOptIn","termsAcceptedAt","lastLoginAt","signupCountry","signupRegion","signupCity"];
+ else{const cols=["createdAt","firstName","lastName","email","country","zip","jobFamilies","seniority","searchStatus","jobTitle","currentCompany","previousCompany","salaryMin","workAuth","marketingOptIn","termsAcceptedAt","lastLoginAt","signupCountry","signupRegion","signupCity"];
   const get=(u,c)=>c==="signupCountry"?(u.signupGeo||{}).country:c==="signupRegion"?(u.signupGeo||{}).region:c==="signupCity"?(u.signupGeo||{}).city:u[c];
   const cell=v=>{if(Array.isArray(v))v=v.join(" | ");v=v==null?"":String(v);if(/^[=+\-@\t\r]/.test(v))v="'"+v;return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
   blob=new Blob(["\ufeff"+[cols.join(",")].concat(USERS.map(u=>cols.map(c=>cell(get(u,c))).join(","))).join("\r\n")],{type:"text/csv"});name=`jobfinder-members-${stamp}.csv`}

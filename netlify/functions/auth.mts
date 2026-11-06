@@ -13,6 +13,8 @@ const MIN_PW = 6, MAX_PW = 128;
 
 const FAMILIES = ["Product management", "Software engineering", "Data engineering", "Technical program management", "Program management", "UX design", "Human resources", "Legal", "Financial analyst", "Bizdev", "Marketing", "Operations", "Executive leadership"];
 const LEVELS = ["Entry", "Mid-level", "Senior", "Staff / Principal", "Director", "VP and up"];
+const SALARY = ["", "Under $100K", "$100K to $150K", "$150K to $200K", "$200K to $300K", "$300K and above"];
+const WORKAUTH = ["", "Authorized to work, no sponsorship needed", "Need visa sponsorship", "Prefer not to say"];
 const STATUSES = ["Actively looking", "Open to offers", "Just browsing"];
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -76,7 +78,7 @@ export default async (req: Request, context: Context) => {
     const u: any = await users.get("u/" + s.uid, { type: "json" });
     if (!u) return json({ user: null });
     const jl: any = (await ujobs.get(s.uid, { type: "json" })) || {};
-    return json({ user: { firstName: u.firstName, lastName: u.lastName || "", email: u.email, createdAt: u.createdAt, jobTitle: u.jobTitle || "", currentCompany: u.currentCompany || "", previousCompany: u.previousCompany || "" },
+    return json({ user: { firstName: u.firstName, lastName: u.lastName || "", email: u.email, createdAt: u.createdAt, jobTitle: u.jobTitle || "", currentCompany: u.currentCompany || "", previousCompany: u.previousCompany || "", salaryMin: u.salaryMin || "", workAuth: u.workAuth || "" },
       saved: (jl.saved || []).map((j: any) => j.url), applied: (jl.applied || []).map((j: any) => j.url) });
   }
 
@@ -97,6 +99,7 @@ export default async (req: Request, context: Context) => {
       const u: any = await users.get("u/" + uidm, { type: "json" });
       if (!u) return json({ error: "Please log in." }, 401);
       u.jobTitle = clean(q.jobTitle, 80); u.currentCompany = clean(q.currentCompany, 80); u.previousCompany = clean(q.previousCompany, 80);
+      u.salaryMin = SALARY.includes(q.salaryMin) ? q.salaryMin : ""; u.workAuth = WORKAUTH.includes(q.workAuth) ? q.workAuth : "";
       await users.setJSON("u/" + uidm, u);
       return json({ ok: true });
     }
