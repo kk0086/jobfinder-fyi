@@ -116,7 +116,7 @@ function radancy(name: string, origin: string, prefix: string, org: string): Rea
   const parse = (html: string): RawJob[] => {
     const out: RawJob[] = []; const re = /<a\s[^>]*?href="([^"]*\/job\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g; let m: RegExpExecArray | null;
     while ((m = re.exec(html))) {
-      const t = /<h[23][^>]*>([\s\S]*?)<\/h[23]>/.exec(m[2]); const l = /class="job-location[^"]*"[^>]*>([\s\S]*?)<\/span>/.exec(m[2]); const d = /job-date-posted"[^>]*>([\s\S]*?)<\/span>/.exec(m[2]);
+      const t = /<h[23][^>]*>([\s\S]*?)<\/h[23]>/.exec(m[2]) || /class="job-title"[^>]*>([\s\S]*?)<\/span>/.exec(m[2]); const l = /class="job-location[^"]*"[^>]*>([\s\S]*?)<\/span>/.exec(m[2]); const d = /job-date-posted"[^>]*>([\s\S]*?)<\/span>/.exec(m[2]);
       const dm = d && /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(d[1]);
       if (t && dec(t[1])) out.push({ company: name, title: dec(t[1]), location: l ? dec(l[1]) : "", department: "", url: origin + m[1], posted: dm ? `${dm[3]}-${dm[1].padStart(2, "0")}-${dm[2].padStart(2, "0")}` : null });
     }
