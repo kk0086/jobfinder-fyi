@@ -75,7 +75,7 @@ details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px
 .ms .ft a{color:var(--accent);cursor:pointer}
 .hd{display:flex;align-items:center;flex-wrap:wrap;gap:6px 20px;margin:0 0 10px}.brand{margin:0;line-height:0}.slogan{margin:0;font-size:21px;font-weight:600;letter-spacing:-.3px;color:var(--ink);padding-left:20px;border-left:2px solid var(--line)}@media (max-width:620px){.slogan{font-size:17px;padding-left:0;border-left:0}}.brand img{height:62px;width:auto;display:block}
 #splash .logo img{height:84px;width:auto;display:block}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .brand img,:root:not([data-theme="light"]) #splash .logo img{background:#fff;border-radius:10px;padding:6px 12px;box-sizing:content-box}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .brand img,:root:not([data-theme="light"]) #splash .logo img{background:#fff;border-radius:10px;padding:6px;box-sizing:content-box}}
 .foot{margin:40px 0 24px;padding-top:22px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 26px;align-items:center;color:var(--muted);font-size:15px}
 .foot a,.foot button{color:var(--muted);font:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:none}
 nav.foot{margin-bottom:0;padding-bottom:0;display:block}nav.foot>span{display:block;margin-bottom:10px;font-weight:600}.pgrid{display:grid;grid-template-rows:repeat(6,auto);grid-auto-flow:column;grid-template-columns:repeat(2,max-content);gap:8px 48px}@media (max-width:600px){.pgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px}.pgrid a{overflow-wrap:anywhere}}nav.foot+.foot{margin-top:24px!important;padding-top:18px!important;border-top:1px solid var(--line)!important}nav.foot+.foot{margin-top:12px;border-top:0;padding-top:0}
@@ -129,7 +129,7 @@ window.hideSplash=function(){clearInterval(window.__splash);var e=document.getEl
 setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},20000)})();</script>
 
 <div class="wrap">
-  <div class="hd"><h1 class="brand"><img src="/logo.png" alt="Job Finder" width="198" height="62"></h1><p class="slogan">Latest Tech jobs. One Search. Find it before everyone else.</p></div>
+  <div class="hd"><h1 class="brand"><img src="/logo.png?v=2" alt="Job Finder" width="72" height="72"></h1><p class="slogan">Latest Tech jobs. One Search. Find it before everyone else.</p></div>
   <div class="search" role="search">
     <select id="freg" aria-label="Region"><option value="all">All regions</option><option value="us">United States</option><option value="ca">Canada</option><option value="uk">United Kingdom</option><option value="ie">Ireland</option><option value="emea">Europe, Middle East &amp; Africa</option></select>
     <div class="sin"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" placeholder="Job title, company or location" aria-label="Search jobs" autocomplete="off"></div>

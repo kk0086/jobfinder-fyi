@@ -103,7 +103,7 @@ export function renderLanding(l: Landing, all: Job[], asOf: string): { html: str
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>
 <style>:root{--bg:#fafaf8;--card:#fff;--ink:#1d1d1b;--muted:#6b6b66;--line:#e6e5df;--link:#0f566f;--accent:#f96b4c;--pay:#0b7a4b}@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--ink:#ecebe6;--muted:#9a9990;--line:#2f2f2b;--link:#7cc4dc;--pay:#4cc38a}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}a{color:var(--link)}
-.w{max-width:960px;margin:0 auto;padding:18px 16px 50px}.logo img{height:44px;width:auto;display:block}.crumb{color:var(--muted);font-size:13px;margin:14px 0 4px}.crumb a{color:var(--muted)}
+.w{max-width:960px;margin:0 auto;padding:18px 16px 50px}.logo img{height:56px;width:56px;display:block}.crumb{color:var(--muted);font-size:13px;margin:14px 0 4px}.crumb a{color:var(--muted)}
 h1{font-size:30px;line-height:1.2;margin:4px 0 10px}h2{font-size:17px;margin:26px 0 10px}.stats{display:flex;flex-wrap:wrap;gap:10px 22px;margin:14px 0}.stats span{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px}
 .note{color:var(--muted)}.cta{display:inline-block;background:var(--accent);color:#1d1d1b;font-weight:700;text-decoration:none;border-radius:10px;padding:10px 18px;margin:8px 0}
 ul.jobs{list-style:none;margin:0;padding:0}.jobs li{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:0 0 8px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.jobs li>a{flex:1;min-width:0;padding:12px 14px;text-decoration:none;color:inherit;display:block}.jobs .t{display:block;font-weight:600;color:var(--link)}.jobs .c{display:block;color:var(--muted);font-size:13px;margin-top:2px}.jobs .d{color:var(--muted);font-size:12px;padding:12px 14px;white-space:nowrap}.pay{color:var(--pay)}
@@ -111,7 +111,7 @@ ul.jobs{list-style:none;margin:0;padding:0}.jobs li{background:var(--card);borde
 .rel{display:flex;flex-wrap:wrap;gap:8px}.rel a{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;text-decoration:none}
 footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;display:flex;gap:16px;flex-wrap:wrap}footer a{color:var(--muted)}
 @media (max-width:560px){h1{font-size:24px}.jobs li{flex-direction:column;gap:0}.jobs .d{padding:0 14px 10px}}</style></head>
-<body><div class="w"><a class="logo" href="/" aria-label="Job Finder home"><img src="/logo.png" alt="Job Finder" width="140" height="44"></a>
+<body><div class="w"><a class="logo" href="/" aria-label="Job Finder home"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a>
 <nav class="crumb"><a href="/">Job Finder</a> › ${esc(l.h1)}</nav>
 <h1>${esc(l.h1)}</h1>
 ${l.intro.map(p => `<p>${esc(p)}</p>`).join("")}
