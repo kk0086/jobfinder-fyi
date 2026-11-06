@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign up · Job Finder</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.ico"><link rel="stylesheet" href="/auth.css"></head>
+<body><div class="w">
+<a class="brand" href="/"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a>
+
+<div id="step1">
+<h1>Create your free account</h1>
+<p class="sub">Save searches and get roles that match you. We'll email you a 6-digit code to confirm.</p>
+<form id="form" novalidate>
+  <div class="row">
+    <div class="f"><label class="l" for="fn">First name</label><input id="fn" type="text" autocomplete="given-name" maxlength="60" placeholder="Alex"></div>
+    <div class="f"><label class="l" for="ln">Last name <span class="opt">(optional)</span></label><input id="ln" type="text" autocomplete="family-name" maxlength="60" placeholder="Rivera"></div>
+  </div>
+  <div class="f"><label class="l" for="em">Email</label><input id="em" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com"></div>
+  <div class="row z">
+    <div class="f"><label class="l" for="co">Country</label><select id="co"></select></div>
+    <div class="f"><label class="l" for="zip">ZIP / postal code</label><input id="zip" type="text" autocomplete="postal-code" maxlength="12" placeholder="94107"></div>
+  </div>
+  <div class="f"><label class="l">Job families you want <span class="opt">(select all that apply)</span></label><div class="ms" id="jf"></div></div>
+  <div class="f"><label class="l">Seniority <span class="opt">(select all that apply)</span></label><div class="ms" id="sn"></div></div>
+  <div class="f"><label class="l" for="st">Where are you in your job search?</label>
+    <select id="st"><option>Actively looking</option><option>Open to offers</option><option>Just browsing</option></select></div>
+  <label class="chk"><input id="priv" type="checkbox"><span>I agree to the <a href="/privacy.html" target="_blank" rel="noopener">Privacy policy</a>.</span></label>
+  <label class="chk"><input id="mk" type="checkbox"><span>Send me job alerts and occasional offers from Job Finder and partners. <span class="opt">(optional)</span></span></label>
+  <p class="err" id="err" role="alert"></p>
+  <button class="btn" id="go" type="submit">Complete sign up by verifying code</button>
+</form>
+<p class="alt">Already have an account? <a href="/login.html">Log in</a></p>
+</div>
+
+<div id="step2" hidden>
+<h1>Check your email</h1>
+<p class="sub">We sent a 6-digit code to <strong id="sentto"></strong>. It expires in 10 minutes.</p>
+<div class="code" id="code"></div>
+<p class="err" id="err2" role="alert"></p>
+<button class="btn" id="verify" type="button">Verify and finish sign up</button>
+<p class="alt">Didn't get it? <a href="#" id="resend">Resend code</a> · <a href="#" id="change">Change email</a></p>
+</div>
+</div>
+<script src="/auth.js"></script>
+<script>
+const FAM=["Product management","Software engineering","Data engineering","Technical program management","Program management","UX design","Human resources","Legal","Financial analyst","Bizdev","Marketing","Operations","Executive leadership"];
+const LVL=["Entry","Mid-level","Senior","Staff / Principal","Director","VP and up"];
+const C=[["US","United States"],["CA","Canada"],["GB","United Kingdom"],["IE","Ireland"],["AU","Australia"],["DE","Germany"],["FR","France"],["NL","Netherlands"],["ES","Spain"],["IT","Italy"],["SE","Sweden"],["CH","Switzerland"],["IN","India"],["SG","Singapore"],["JP","Japan"],["BR","Brazil"],["MX","Mexico"],["AE","United Arab Emirates"],["IL","Israel"],["ZA","South Africa"],["NZ","New Zealand"],["PL","Poland"],["PT","Portugal"],["BE","Belgium"],["AT","Austria"],["DK","Denmark"],["NO","Norway"],["FI","Finland"],["PH","Philippines"],["ZZ","Other"]];
+const co=document.getElementById("co");co.innerHTML=C.map(([c,n])=>`<option value="${c}">${n}</option>`).join("");
+const jf=makeMulti(document.getElementById("jf"),FAM,"Select job families"),sn=makeMulti(document.getElementById("sn"),LVL,"Select seniority");
+authFlow("signup",()=>{
+  const v=id=>document.getElementById(id).value.trim(),email=v("em").toLowerCase();
+  if(!v("fn"))return"Enter your first name.";
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))return"Enter a valid email address.";
+  if(v("zip")&&!/^[A-Za-z0-9 -]{3,12}$/.test(v("zip")))return"Enter a valid ZIP / postal code.";
+  if(!document.getElementById("priv").checked)return"Please agree to the Privacy policy.";
+  return{email,firstName:v("fn"),lastName:v("ln"),country:co.value,zip:v("zip"),jobFamilies:jf.get(),seniority:sn.get(),searchStatus:v("st"),agreePrivacy:true,marketingOptIn:document.getElementById("mk").checked};
+});
+</script>
+</body></html>

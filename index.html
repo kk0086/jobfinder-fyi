@@ -73,7 +73,7 @@ details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px
 .ms .ls span.n{color:var(--muted);font-size:12px;text-align:right;min-width:28px}
 .ms .ft{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
 .ms .ft a{color:var(--accent);cursor:pointer}
-.hd{display:flex;align-items:center;flex-wrap:wrap;gap:6px 20px;margin:0 0 10px}.brand{margin:0;line-height:0}.slogan{margin:0;font-size:21px;font-weight:600;letter-spacing:-.3px;color:var(--ink);padding-left:20px;border-left:2px solid var(--line)}@media (max-width:620px){.slogan{font-size:17px;padding-left:0;border-left:0}}.brand img{height:62px;width:auto;display:block}
+.acct{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px}.acct .ab{display:inline-flex;align-items:center;height:38px;padding:0 16px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600;background:transparent;cursor:pointer;font-family:inherit;font-size:14px}.acct .ab:hover{border-color:var(--ink)}.acct .pri{background:#c43a27;border-color:#c43a27;color:#fff}.acct .pri:hover{background:#a82f1f;border-color:#a82f1f}.acct .hi{color:var(--ink);font-weight:600}@media (max-width:620px){.acct{width:100%;justify-content:flex-end;margin-left:0}}.hd{display:flex;align-items:center;flex-wrap:wrap;gap:6px 20px;margin:0 0 10px}.brand{margin:0;line-height:0}.slogan{margin:0;font-size:21px;font-weight:600;letter-spacing:-.3px;color:var(--ink);padding-left:20px;border-left:2px solid var(--line)}@media (max-width:620px){.slogan{font-size:17px;padding-left:0;border-left:0}}.brand img{height:62px;width:auto;display:block}
 #splash .logo img{height:84px;width:auto;display:block}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .brand img,:root:not([data-theme="light"]) #splash .logo img{background:#fff;border-radius:10px;padding:6px;box-sizing:content-box}}
 .foot{margin:40px 0 24px;padding-top:22px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 26px;align-items:center;color:var(--muted);font-size:15px}
@@ -129,7 +129,7 @@ window.hideSplash=function(){clearInterval(window.__splash);var e=document.getEl
 setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},20000)})();</script>
 
 <div class="wrap">
-  <div class="hd"><h1 class="brand"><img src="/logo.png?v=2" alt="Job Finder" width="72" height="72"></h1><p class="slogan">Latest Tech jobs. One Search. Find it before everyone else.</p></div>
+  <div class="hd"><h1 class="brand"><img src="/logo.png?v=2" alt="Job Finder" width="72" height="72"></h1><p class="slogan">Latest Tech jobs. One Search. Find it before everyone else.</p><div class="acct" id="acct"><a class="ab" href="/login.html">Log in</a><a class="ab pri" href="/signup.html">Sign up</a></div></div>
   <div class="search" role="search">
     <select id="freg" aria-label="Region"><option value="all">All regions</option><option value="us">United States</option><option value="ca">Canada</option><option value="uk">United Kingdom</option><option value="ie">Ireland</option><option value="emea">Europe, Middle East &amp; Africa</option></select>
     <div class="sin"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" placeholder="Job title, company or location" aria-label="Search jobs" autocomplete="off"></div>
@@ -385,6 +385,14 @@ boot();
   document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a.job");if(!a||S.clicks.length>=25)return;
     var t=a.querySelector(".t"),c=a.querySelector(".c");S.clicks.push({co:c?c.textContent.split(" · ")[0]:"",t:t?(t.firstChild?t.firstChild.textContent:""):""});send()},true);
 }catch(e){}})();
+</script>
+<script>
+// Header account area: Log in / Sign up, or the member's name with Log out.
+(function(){var a=document.getElementById("acct");if(!a)return;
+fetch("/api/auth/me",{credentials:"same-origin"}).then(function(r){return r.ok?r.json():null}).then(function(d){
+if(!d||!d.user)return;a.innerHTML="";var s=document.createElement("span");s.className="hi";s.textContent="Hi, "+d.user.firstName;
+var b=document.createElement("button");b.className="ab";b.type="button";b.textContent="Log out";
+b.onclick=function(){fetch("/api/auth/logout",{method:"POST",credentials:"same-origin"}).then(function(){location.reload()})};a.append(s,b)}).catch(function(){})})();
 </script>
 </body>
 </html>

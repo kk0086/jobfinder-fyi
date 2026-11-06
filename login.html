@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Log in · Job Finder</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.ico"><link rel="stylesheet" href="/auth.css"></head>
+<body><div class="w">
+<a class="brand" href="/"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a>
+
+<div id="step1">
+<h1>Log in</h1>
+<p class="sub">Enter your email and we'll send you a 6-digit code. No password needed.</p>
+<form id="form" novalidate>
+  <div class="f"><label class="l" for="em">Email</label><input id="em" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com"></div>
+  <p class="err" id="err" role="alert"></p>
+  <button class="btn" id="go" type="submit">Email me a code</button>
+</form>
+<p class="alt">New here? <a href="/signup.html">Create a free account</a></p>
+</div>
+
+<div id="step2" hidden>
+<h1>Check your email</h1>
+<p class="sub">If an account exists for <strong id="sentto"></strong>, we sent a 6-digit code. It expires in 10 minutes.</p>
+<div class="code" id="code"></div>
+<p class="err" id="err2" role="alert"></p>
+<button class="btn" id="verify" type="button">Verify and log in</button>
+<p class="alt">Didn't get it? <a href="#" id="resend">Resend code</a> · <a href="#" id="change">Change email</a></p>
+</div>
+</div>
+<script src="/auth.js"></script>
+<script>
+authFlow("login",()=>{
+  const email=document.getElementById("em").value.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))return"Enter a valid email address.";
+  return{email};
+});
+</script>
+</body></html>
