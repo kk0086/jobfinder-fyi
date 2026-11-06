@@ -642,6 +642,8 @@ export const BIG: Reader[] = [
   phenom("Dollar Tree", "https://careers.dollartree.com"),
   DEEPMIND,
   smartrecruiters("LinkedIn", "LinkedIn3"),
+  workday("Memorial Sloan Kettering", "msk.wd108.myworkdayjobs.com", "msk", "MSKCC_Careers_Primary"),
+  workday("Remitly", "remitly.wd5.myworkdayjobs.com", "remitly", "Remitly_Careers"),
 ];
 
 export async function crawlBig(i: number) {
