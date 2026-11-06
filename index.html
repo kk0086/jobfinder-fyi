@@ -73,7 +73,10 @@ details{margin-top:18px}summary{cursor:pointer;color:var(--muted);font-size:13px
 .ms .ls span.n{color:var(--muted);font-size:12px;text-align:right;min-width:28px}
 .ms .ft{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
 .ms .ft a{color:var(--accent);cursor:pointer}
-.acct{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px}.acct .ab{display:inline-flex;align-items:center;height:38px;padding:0 16px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600;background:transparent;cursor:pointer;font-family:inherit;font-size:14px}.acct .ab:hover{border-color:var(--ink)}.acct .pri{background:#c43a27;border-color:#c43a27;color:#fff}.acct .pri:hover{background:#a82f1f;border-color:#a82f1f}.acct .hi{color:var(--ink);font-weight:600}@media (max-width:620px){.acct{width:100%;justify-content:flex-end;margin-left:0}}.hd{display:flex;align-items:center;flex-wrap:wrap;gap:6px 20px;margin:0 0 10px}.brand{margin:0;line-height:0}.slogan{margin:0;font-size:21px;font-weight:600;letter-spacing:-.3px;color:var(--ink);padding-left:20px;border-left:2px solid var(--line)}@media (max-width:620px){.slogan{font-size:17px;padding-left:0;border-left:0}}.brand img{height:62px;width:auto;display:block}
+.acct{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px}.acct .ab{display:inline-flex;align-items:center;height:38px;padding:0 16px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600;background:transparent;cursor:pointer;font-family:inherit;font-size:14px}.acct .ab:hover{border-color:var(--ink)}.acct .pri{background:#c43a27;border-color:#c43a27;color:#fff}.acct .pri:hover{background:#a82f1f;border-color:#a82f1f}.acct .hi{color:var(--ink);font-weight:600}@media (max-width:620px){.acct{width:100%;justify-content:flex-end;margin-left:0}}.acct{position:relative}.pm{position:relative}.pmb{display:inline-flex;align-items:center;gap:6px;height:42px;padding:0 10px 0 5px;border:1px solid var(--accent);border-radius:999px;background:var(--card);color:var(--ink);cursor:pointer}.pmb .av{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center}.pmb svg,.pmn svg{display:block}.pmn{position:absolute;right:0;top:calc(100% + 6px);z-index:60;width:260px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:8px;display:none;flex-direction:column;gap:2px;text-align:left}.pm.open .pmn{display:flex}.pmn .who{padding:8px 12px 10px;border-bottom:1px solid var(--line);margin-bottom:6px}.pmn .who b{display:block;font-size:15px}.pmn .who span{font-size:12px;color:var(--muted);word-break:break-all}.pmn a,.pmn button{display:flex;align-items:center;gap:12px;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:var(--ink);font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;font-family:inherit;text-align:left;width:100%}.pmn a:hover,.pmn button:hover{background:var(--accent-soft)}.pmn .n{margin-left:auto;font-size:12px;color:var(--muted);font-weight:400}.pmn hr{border:0;height:1px;background:var(--line);margin:6px 0}
+.job .r{display:flex;flex-direction:column;align-items:flex-end;gap:6px}.job .act{display:flex;align-items:center;gap:8px}.act button{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}.act button:hover{border-color:var(--ink)}.act .sv{width:30px;padding:0}.act .sv.on{background:var(--accent);border-color:var(--accent);color:#fff}.act .sv.on svg{fill:#fff}.act .ap .bx{width:14px;height:14px;border:1.5px solid var(--muted);border-radius:4px;display:inline-flex;align-items:center;justify-content:center}.act .ap.on .bx{background:var(--accent);border-color:var(--accent)}.act .ap.on .bx::after{content:"";width:8px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}.job.sd{border-color:var(--accent)}
+@media (max-width:520px){.job .r{align-items:flex-start}}
+.hd{display:flex;align-items:center;flex-wrap:wrap;gap:6px 20px;margin:0 0 10px}.brand{margin:0;line-height:0}.slogan{margin:0;font-size:21px;font-weight:600;letter-spacing:-.3px;color:var(--ink);padding-left:20px;border-left:2px solid var(--line)}@media (max-width:620px){.slogan{font-size:17px;padding-left:0;border-left:0}}.brand img{height:62px;width:auto;display:block}
 #splash .logo img{height:84px;width:auto;display:block}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .brand img,:root:not([data-theme="light"]) #splash .logo img{background:#fff;border-radius:10px;padding:6px;box-sizing:content-box}}
 .foot{margin:40px 0 24px;padding-top:22px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 26px;align-items:center;color:var(--muted);font-size:15px}
@@ -298,12 +301,14 @@ function render() {
   $("count").textContent = `${rows.length.toLocaleString()} roles` + (rows.length > PER ? `, showing ${lo + 1}–${Math.min(rows.length, lo + PER)}` : "");
   const pg = rows.length > PER ? `<button data-pg="-1" ${page === 0 ? "disabled" : ""}>← Previous</button><span>Page ${page + 1} of ${pages}</span><button data-pg="1" ${page >= pages - 1 ? "disabled" : ""}>Next →</button>` : "";
   $("pgTop").innerHTML = pg; $("pgBot").innerHTML = pg;
+  window.__jm = window.__jm || {}; rows.slice(lo, lo + PER).forEach(j => { window.__jm[j.url] = { url: j.url, title: j.title, company: j.company, location: j.location || "", department: j.department || "" }; });
   $("list").innerHTML = rows.slice(lo, lo + PER).map(j => `
-    <a class="job" href="${esc(j.url)}" target="_blank" rel="noopener noreferrer">
+    <a class="job" data-u="${esc(j.url)}" href="${esc(j.url)}" target="_blank" rel="noopener noreferrer">
       <span class="t">${esc(j.title)}${j.remote ? '<span class="tag">Remote</span>' : ""}${j.example ? '<span class="tag">Your example</span>' : ""}${FIT.includes(j.seniority) ? '<span class="tag">' + esc(j.seniority === "Principal+" ? "Staff / Principal / Group" : j.seniority) + '</span>' : ""}</span>
-      <span class="r">${j.tsKind ? j.tsKind + " " : ""}${ago(j.ts)}</span>
+      <span class="r"><span>${j.tsKind ? j.tsKind + " " : ""}${ago(j.ts)}</span><span class="act" data-u="${esc(j.url)}"><button type="button" class="sv" data-a="sv" aria-label="Save job" title="Save job"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button><button type="button" class="ap" data-a="ap" role="checkbox" aria-checked="false"><span class="bx"></span>Applied</button></span></span>
       <span class="c">${esc(j.company)} · ${esc(j.location || "Location n/a")} · ${esc(j.department)}${j.salary_min ? " · <b class=\"pay\">" + money(j.salary_min, j.salary_cur) + (j.salary_max && j.salary_max !== j.salary_min ? "–" + money(j.salary_max, j.salary_cur).replace(/^\D+/, "") : "") + "</b>" : ""}${j.src === "search" ? " · <i class=\"fs\">from search</i>" : ""}</span>
     </a>`).join("") || '<div class="meta">No roles match these filters.</div>';
+  if (window.__jfSync) window.__jfSync();
 }
 
 function init() {
@@ -382,17 +387,37 @@ boot();
     setTimeout(function(){if(c.id==="sgo"){var q=(document.getElementById("q").value||"").trim().toLowerCase().slice(0,40);if(q&&S.q.length<12&&S.q[S.q.length-1]!==q){S.q.push(q);send()}}
       else if(c.getAttribute("data-remote")){if(S.f.length<40){S.f.push("chip:Remote only");send()}}
       else{var q2=(c.getAttribute("data-q")||"").toLowerCase().slice(0,40);if(q2&&S.q.length<12){S.q.push(q2);send()}}},0)},true);
-  document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a.job");if(!a||S.clicks.length>=25)return;
+  document.addEventListener("click",function(e){if(e.target.closest&&e.target.closest(".act"))return;var a=e.target.closest&&e.target.closest("a.job");if(!a||S.clicks.length>=25)return;
     var t=a.querySelector(".t"),c=a.querySelector(".c");S.clicks.push({co:c?c.textContent.split(" · ")[0]:"",t:t?(t.firstChild?t.firstChild.textContent:""):""});send()},true);
 }catch(e){}})();
 </script>
 <script>
-// Header account area: Log in / Sign up, or the member's name with Log out.
+// Header account area + saved / applied buttons on every card.
 (function(){var a=document.getElementById("acct");if(!a)return;
+var ME=null,SV={},AP={};
+function sync(){var els=document.querySelectorAll(".job[data-u]");for(var i=0;i<els.length;i++){var u=els[i].getAttribute("data-u"),sv=!!SV[u],ap=!!AP[u],b=els[i].querySelector(".sv"),c=els[i].querySelector(".ap");
+if(b){b.classList.toggle("on",sv);b.setAttribute("aria-label",sv?"Saved. Click to remove":"Save job");b.title=sv?"Saved. Click to remove":"Save job"}
+if(c){c.classList.toggle("on",ap);c.setAttribute("aria-checked",ap?"true":"false")}els[i].classList.toggle("sd",sv||ap)}
+var n1=document.getElementById("pmS"),n2=document.getElementById("pmA");if(n1)n1.textContent=Object.keys(SV).length;if(n2)n2.textContent=Object.keys(AP).length}
+window.__jfSync=sync;
+function post(op,job){return fetch("/api/auth/job",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({op:op,job:job})}).then(function(r){return r.json().then(function(d){return{ok:r.ok,s:r.status,d:d}})})}
+document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest(".act button");if(!b)return;e.preventDefault();e.stopPropagation();
+var u=b.parentNode.getAttribute("data-u");
+if(!ME){location.href="/login.html?next="+encodeURIComponent(location.pathname+location.search);return}
+var job=(window.__jm||{})[u];if(!job)return;var isS=b.getAttribute("data-a")==="sv",map=isS?SV:AP,was=!!map[u];
+if(was)delete map[u];else map[u]=1;sync();
+post((isS?"":"")+(isS?(was?"unsave":"save"):(was?"unapply":"apply")),job).then(function(r){if(!r.ok){if(was)map[u]=1;else delete map[u];sync();if(r.s===401)location.href="/login.html?next="+encodeURIComponent(location.pathname+location.search);else alert(r.d.error||"Something went wrong. Please try again.")}}).catch(function(){if(was)map[u]=1;else delete map[u];sync()})},true);
 fetch("/api/auth/me",{credentials:"same-origin"}).then(function(r){return r.ok?r.json():null}).then(function(d){
-if(!d||!d.user)return;a.innerHTML="";var s=document.createElement("span");s.className="hi";s.textContent="Hi, "+d.user.firstName;
-var b=document.createElement("button");b.className="ab";b.type="button";b.textContent="Log out";
-b.onclick=function(){fetch("/api/auth/logout",{method:"POST",credentials:"same-origin"}).then(function(){location.reload()})};a.append(s,b)}).catch(function(){})})();
+if(!d||!d.user)return;ME=d.user;(d.saved||[]).forEach(function(u){SV[u]=1});(d.applied||[]).forEach(function(u){AP[u]=1});
+var nm=(d.user.firstName+" "+(d.user.lastName||"")).trim();
+a.innerHTML='<div class="pm" id="pm"><button type="button" class="pmb" id="pmb" aria-haspopup="true" aria-expanded="false" aria-label="Open profile menu"><span class="av"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></span><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></button><div class="pmn" id="pmn"><div class="who"><b id="pmName"></b><span id="pmMail"></span></div><a href="/account.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Account details</a><a href="/saved.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Saved jobs<span class="n" id="pmS">0</span></a><a href="/applied.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></svg>Application dashboard<span class="n" id="pmA">0</span></a><hr><button type="button" id="pmOut"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Log out</button></div></div>';
+document.getElementById("pmName").textContent=nm;document.getElementById("pmMail").textContent=d.user.email;
+var pm=document.getElementById("pm"),pb=document.getElementById("pmb");
+pb.onclick=function(e){e.stopPropagation();var o=pm.classList.toggle("open");pb.setAttribute("aria-expanded",o)};
+document.addEventListener("click",function(e){if(!pm.contains(e.target)){pm.classList.remove("open");pb.setAttribute("aria-expanded","false")}});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"){pm.classList.remove("open");pb.setAttribute("aria-expanded","false")}});
+document.getElementById("pmOut").onclick=function(){fetch("/api/auth/logout",{method:"POST",credentials:"same-origin"}).then(function(){location.reload()})};
+sync()}).catch(function(){})})();
 </script>
 </body>
 </html>

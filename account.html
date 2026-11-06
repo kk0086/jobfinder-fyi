@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Account details · Job Finder</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.ico"><link rel="stylesheet" href="/auth.css"></head>
+<body data-page="account"><div class="w">
+<a class="brand" href="/"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a>
+<h1>Account details</h1>
+<p class="sub">Optional. Add as much or as little as you like.</p>
+<form id="form" novalidate hidden>
+  <div class="ro"><div><span>Name</span><b id="nm"></b></div><div><span>Date created</span><b id="created"></b></div></div>
+  <div class="ro" style="grid-template-columns:1fr"><div><span>Email</span><b id="mail"></b></div></div>
+  <hr class="sep">
+  <div class="f"><label class="l" for="jt">Job title <span class="opt">(optional)</span></label><input id="jt" type="text" maxlength="80" placeholder="e.g. Senior Product Manager" autocomplete="organization-title"></div>
+  <div class="f"><label class="l" for="cc">Current company <span class="opt">(optional)</span></label><input id="cc" type="text" maxlength="80" placeholder="e.g. Acme Inc." autocomplete="organization"></div>
+  <div class="f"><label class="l" for="pc">Previous company <span class="opt">(optional)</span></label><input id="pc" type="text" maxlength="80" placeholder="e.g. Globex"></div>
+  <p class="err" id="err" role="alert"></p><p class="ok" id="okm" role="status"></p>
+  <div class="bar2"><button class="btn" id="go" type="submit">Save changes</button><a class="btn sec" href="/" style="text-decoration:none">Back</a></div>
+</form>
+</div><script src="/me.js"></script></body></html>

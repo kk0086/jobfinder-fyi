@@ -49,7 +49,7 @@ export default async (req: Request, context: Context) => {
   const action = path.split("/").pop();
   // Strong consistency: a code, account or session must be readable right after it is written (eventual reads can miss it).
   const store = (name: string) => getStore({ name, consistency: "strong" });
-  const users = store("users"), codes = store("authcodes"), sess = store("authsess");
+  const users = store("users"), codes = store("authcodes"), sess = store("authsess"), ujobs = store("userjobs");
   const ip = sha(String(context.ip || req.headers.get("x-nf-client-connection-ip") || "?"));
   const hour = Math.floor(Date.now() / 3_600_000);
 
@@ -74,7 +74,48 @@ export default async (req: Request, context: Context) => {
     const s: any = await sess.get("t/" + sha(tok), { type: "json" });
     if (!s || s.exp < Date.now()) return json({ user: null });
     const u: any = await users.get("u/" + s.uid, { type: "json" });
-    return json({ user: u ? { firstName: u.firstName, email: u.email } : null });
+    if (!u) return json({ user: null });
+    const jl: any = (await ujobs.get(s.uid, { type: "json" })) || {};
+    return json({ user: { firstName: u.firstName, lastName: u.lastName || "", email: u.email, createdAt: u.createdAt, jobTitle: u.jobTitle || "", currentCompany: u.currentCompany || "", previousCompany: u.previousCompany || "" },
+      saved: (jl.saved || []).map((j: any) => j.url), applied: (jl.applied || []).map((j: any) => j.url) });
+  }
+
+  // ---- Signed-in member actions: profile details, saved jobs, applied jobs ----
+  if (action === "jobs" || action === "job" || action === "profile") {
+    const tok = readCookie(req, COOKIE);
+    const s: any = tok ? await sess.get("t/" + sha(tok), { type: "json" }) : null;
+    if (!s || s.exp < Date.now()) return json({ error: "Please log in." }, 401);
+    const uidm: string = s.uid;
+    if (action === "jobs" && req.method === "GET") {
+      const jl: any = (await ujobs.get(uidm, { type: "json" })) || {};
+      return json({ saved: jl.saved || [], applied: jl.applied || [] });
+    }
+    if (req.method !== "POST") return json({ error: "Not found" }, 404);
+    let q: any;
+    try { q = JSON.parse(await req.text()); } catch { return json({ error: "Bad request" }, 400); }
+    if (action === "profile") {
+      const u: any = await users.get("u/" + uidm, { type: "json" });
+      if (!u) return json({ error: "Please log in." }, 401);
+      u.jobTitle = clean(q.jobTitle, 80); u.currentCompany = clean(q.currentCompany, 80); u.previousCompany = clean(q.previousCompany, 80);
+      await users.setJSON("u/" + uidm, u);
+      return json({ ok: true });
+    }
+    const j = q.job || {}, url = clean(j.url, 600);
+    if (!/^https?:\/\//i.test(url)) return json({ error: "Bad job." }, 400);
+    const MAXJ = 500;
+    const jl: any = (await ujobs.get(uidm, { type: "json" })) || {};
+    jl.saved = jl.saved || []; jl.applied = jl.applied || [];
+    const rec = { url, title: clean(j.title, 160), company: clean(j.company, 100), location: clean(j.location, 160), department: clean(j.department, 80), at: new Date().toISOString() };
+    const has = (l: any[]) => l.some(x => x.url === url);
+    const drop = (l: any[]) => l.filter(x => x.url !== url);
+    const op = q.op;
+    if (op === "save" && !has(jl.saved)) { if (jl.saved.length >= MAXJ) return json({ error: "You've reached the limit of 500 saved jobs." }, 400); jl.saved.unshift(rec); }
+    else if (op === "unsave") jl.saved = drop(jl.saved);
+    else if (op === "apply" && !has(jl.applied)) { if (jl.applied.length >= MAXJ) return json({ error: "You've reached the limit of 500 applied jobs." }, 400); jl.applied.unshift(rec); }
+    else if (op === "unapply") jl.applied = drop(jl.applied);
+    else if (!["save", "unsave", "apply", "unapply"].includes(op)) return json({ error: "Bad request" }, 400);
+    await ujobs.setJSON(uidm, jl);
+    return json({ ok: true, saved: jl.saved.length, applied: jl.applied.length });
   }
 
   if (action === "logout" && req.method === "POST") {
