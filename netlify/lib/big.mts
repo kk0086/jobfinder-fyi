@@ -644,6 +644,7 @@ export const BIG: Reader[] = [
   smartrecruiters("LinkedIn", "LinkedIn3"),
   workday("Memorial Sloan Kettering", "msk.wd108.myworkdayjobs.com", "msk", "MSKCC_Careers_Primary"),
   workday("Remitly", "remitly.wd5.myworkdayjobs.com", "remitly", "Remitly_Careers"),
+  radancy("Mayo Clinic", "https://jobs.mayoclinic.org", "", "33647"),
 ];
 
 export async function crawlBig(i: number) {
