@@ -19,3 +19,6 @@ input:focus,select:focus,.ms>button:focus{outline:2px solid var(--teal);outline-
 .err{color:#b3261e;font-size:14px;margin:0 0 12px;min-height:0}@media (prefers-color-scheme:dark){.err{color:#ff8a80}}
 .code{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:0 0 16px}.code input{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-family:inherit;height:56px;text-align:center;font-size:24px;font-weight:600;padding:0}
 @media (max-width:480px){.row{grid-template-columns:1fr}.row.z{grid-template-columns:1fr 1fr}}
+.pwbox{position:relative}.pwbox input{padding-right:64px}.pwbox .show{position:absolute;right:6px;top:6px;height:32px;padding:0 10px;border:0;background:transparent;color:var(--teal);font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}
+input[type=password]{height:44px;width:100%;padding:0 12px;border:1px solid var(--line);border-radius:8px;font-size:15px;background:var(--card);color:var(--ink);font-family:inherit}input[type=password]:focus{outline:2px solid var(--teal);outline-offset:1px}
+.fl{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:2px 0 14px;font-size:13px}.fl .chk{margin:0}

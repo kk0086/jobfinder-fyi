@@ -6,13 +6,15 @@
 
 <div id="step1">
 <h1>Create your free account</h1>
-<p class="sub">Save searches and get roles that match you. We'll email you a 6-digit code to confirm.</p>
+<p class="sub">Save searches and get roles that match you. We'll email you a one-time 6-digit code to confirm your email.</p>
 <form id="form" novalidate>
   <div class="row">
     <div class="f"><label class="l" for="fn">First name</label><input id="fn" type="text" autocomplete="given-name" maxlength="60" placeholder="Alex"></div>
     <div class="f"><label class="l" for="ln">Last name <span class="opt">(optional)</span></label><input id="ln" type="text" autocomplete="family-name" maxlength="60" placeholder="Rivera"></div>
   </div>
   <div class="f"><label class="l" for="em">Email</label><input id="em" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com"></div>
+  <div class="f"><label class="l" for="pw">Password <span class="opt">(at least 6 characters)</span></label>
+    <div class="pwbox"><input id="pw" type="password" autocomplete="new-password" minlength="6" maxlength="128"><button type="button" class="show" id="showpw" aria-label="Show password">Show</button></div></div>
   <div class="row z">
     <div class="f"><label class="l" for="co">Country</label><select id="co"></select></div>
     <div class="f"><label class="l" for="zip">ZIP / postal code</label><input id="zip" type="text" autocomplete="postal-code" maxlength="12" placeholder="94107"></div>
@@ -49,9 +51,11 @@ authFlow("signup",()=>{
   const v=id=>document.getElementById(id).value.trim(),email=v("em").toLowerCase();
   if(!v("fn"))return"Enter your first name.";
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))return"Enter a valid email address.";
+  if(document.getElementById("pw").value.length<6)return"Choose a password of at least 6 characters.";
   if(v("zip")&&!/^[A-Za-z0-9 -]{3,12}$/.test(v("zip")))return"Enter a valid ZIP / postal code.";
   if(!document.getElementById("priv").checked)return"Please agree to the Privacy policy.";
-  return{email,firstName:v("fn"),lastName:v("ln"),country:co.value,zip:v("zip"),jobFamilies:jf.get(),seniority:sn.get(),searchStatus:v("st"),agreePrivacy:true,marketingOptIn:document.getElementById("mk").checked};
+  return{email,firstName:v("fn"),lastName:v("ln"),country:co.value,zip:v("zip"),jobFamilies:jf.get(),seniority:sn.get(),searchStatus:v("st"),password:document.getElementById("pw").value,agreePrivacy:true,marketingOptIn:document.getElementById("mk").checked};
 });
+document.getElementById("showpw").onclick=function(){var p=document.getElementById("pw"),h=p.type==="password";p.type=h?"text":"password";this.textContent=h?"Hide":"Show"};
 </script>
 </body></html>

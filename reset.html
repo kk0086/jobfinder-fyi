@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reset password · Job Finder</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.ico"><link rel="stylesheet" href="/auth.css"></head>
+<body><div class="w">
+<a class="brand" href="/"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a>
+
+<div id="step1">
+<h1>Reset your password</h1>
+<p class="sub">Enter your email and we'll send you a 6-digit code.</p>
+<form id="form" novalidate>
+  <div class="f"><label class="l" for="em">Email</label><input id="em" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com"></div>
+  <p class="err" id="err" role="alert"></p>
+  <button class="btn" id="go" type="submit">Email me a code</button>
+</form>
+<p class="alt"><a href="/login.html">Back to log in</a></p>
+</div>
+
+<div id="step2" hidden>
+<h1>Choose a new password</h1>
+<p class="sub">If an account exists for <strong id="sentto"></strong>, we sent a 6-digit code. It expires in 10 minutes.</p>
+<div class="code" id="code"></div>
+<div class="f"><label class="l" for="pw">New password <span class="opt">(at least 6 characters)</span></label>
+  <div class="pwbox"><input id="pw" type="password" autocomplete="new-password" minlength="6" maxlength="128"><button type="button" class="show" id="showpw" aria-label="Show password">Show</button></div></div>
+<p class="err" id="err2" role="alert"></p>
+<button class="btn" id="verify" type="button">Save password and log in</button>
+<p class="alt">Didn't get it? <a href="#" id="resend">Resend code</a> · <a href="#" id="change">Change email</a></p>
+</div>
+</div>
+<script src="/auth.js"></script>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)},code=makeCode($("code")),email="";
+  var api=function(p,b){return fetch("/api/auth/"+p,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().catch(function(){return{}}).then(function(d){return{ok:r.ok,d:d}})})};
+  var err=function(m){$("err").textContent=m||"";$("err2").textContent=m||""};
+  $("showpw").onclick=function(){var p=$("pw"),h=p.type==="password";p.type=h?"text":"password";this.textContent=h?"Hide":"Show"};
+  $("form").onsubmit=function(e){e.preventDefault();err("");email=$("em").value.trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))return err("Enter a valid email address.");
+    var b=$("go");b.disabled=true;api("reset-start",{email:email}).then(function(r){b.disabled=false;if(!r.ok)return err(r.d.error||"Something went wrong.");$("sentto").textContent=email;$("step1").hidden=true;$("step2").hidden=false;code.focus()})};
+  $("verify").onclick=function(){err("");var c=code.get(),pw=$("pw").value;
+    if(c.length!==6)return err("Enter the 6-digit code.");
+    if(pw.length<6)return err("Choose a password of at least 6 characters.");
+    var b=$("verify");b.disabled=true;api("reset",{email:email,code:c,password:pw}).then(function(r){b.disabled=false;if(!r.ok)return err(r.d.error||"Something went wrong.");location.href="/"})};
+  $("resend").onclick=function(e){e.preventDefault();err("");api("reset-start",{email:email}).then(function(r){if(!r.ok)err(r.d.error||"Could not resend.");else $("resend").textContent="Code sent. Resend again"})};
+  $("change").onclick=function(e){e.preventDefault();err("");$("step2").hidden=true;$("step1").hidden=false};
+})();
+</script>
+</body></html>

@@ -3,33 +3,34 @@
 <title>Log in · Job Finder</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.ico"><link rel="stylesheet" href="/auth.css"></head>
 <body><div class="w">
 <a class="brand" href="/"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a>
-
-<div id="step1">
 <h1>Log in</h1>
-<p class="sub">Enter your email and we'll send you a 6-digit code. No password needed.</p>
+<p class="sub">Welcome back. Log in with your email and password.</p>
 <form id="form" novalidate>
   <div class="f"><label class="l" for="em">Email</label><input id="em" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com"></div>
+  <div class="f"><label class="l" for="pw">Password</label>
+    <div class="pwbox"><input id="pw" type="password" autocomplete="current-password" maxlength="128"><button type="button" class="show" id="showpw" aria-label="Show password">Show</button></div></div>
+  <div class="fl"><label class="chk"><input id="keep" type="checkbox"><span>Keep me signed in</span></label><a href="/reset.html">Forgot password?</a></div>
   <p class="err" id="err" role="alert"></p>
-  <button class="btn" id="go" type="submit">Email me a code</button>
+  <button class="btn" id="go" type="submit">Log in</button>
 </form>
 <p class="alt">New here? <a href="/signup.html">Create a free account</a></p>
 </div>
-
-<div id="step2" hidden>
-<h1>Check your email</h1>
-<p class="sub">If an account exists for <strong id="sentto"></strong>, we sent a 6-digit code. It expires in 10 minutes.</p>
-<div class="code" id="code"></div>
-<p class="err" id="err2" role="alert"></p>
-<button class="btn" id="verify" type="button">Verify and log in</button>
-<p class="alt">Didn't get it? <a href="#" id="resend">Resend code</a> · <a href="#" id="change">Change email</a></p>
-</div>
-</div>
-<script src="/auth.js"></script>
 <script>
-authFlow("login",()=>{
-  const email=document.getElementById("em").value.trim().toLowerCase();
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))return"Enter a valid email address.";
-  return{email};
-});
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var next=(function(){try{var n=new URLSearchParams(location.search).get("next")||"/";return n.charAt(0)==="/"&&n.charAt(1)!=="/"?n:"/"}catch(e){return"/"}})();
+  $("showpw").onclick=function(){var p=$("pw"),h=p.type==="password";p.type=h?"text":"password";this.textContent=h?"Hide":"Show"};
+  $("form").onsubmit=function(e){
+    e.preventDefault();$("err").textContent="";
+    var email=$("em").value.trim().toLowerCase(),pw=$("pw").value;
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email))return $("err").textContent="Enter a valid email address.";
+    if(!pw)return $("err").textContent="Enter your password.";
+    var b=$("go");b.disabled=true;
+    fetch("/api/auth/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,password:pw,keep:$("keep").checked})})
+      .then(function(r){return r.json().then(function(d){return{ok:r.ok,d:d}})})
+      .then(function(r){b.disabled=false;if(!r.ok)return $("err").textContent=r.d.error||"Something went wrong. Please try again.";location.href=next})
+      .catch(function(){b.disabled=false;$("err").textContent="Something went wrong. Please try again."});
+  };
+})();
 </script>
 </body></html>
