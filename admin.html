@@ -49,7 +49,7 @@ async function load(){
   $("login").hidden=true;$("app").hidden=false;const t=d.totals;
   $("sub").innerHTML=`<span class="live"></span>${t.liveNow} active now · updated ${new Date(d.generated).toLocaleTimeString()}`+(d.truncated?" · capped at 20,000 sessions":"");
   const tile=(v,l)=>`<div class="card tile"><b>${v}</b><span>${l}</span></div>`;
-  $("tiles").innerHTML=tile(t.visitors.toLocaleString(),"Unique visitors")+tile(t.sessions.toLocaleString(),"Visits")+tile(t.pageviews.toLocaleString(),"Page views")+tile(dur(t.avgActiveSec),"Avg time on site")+tile(dur(t.medianActiveSec),"Median time on site")+tile(t.totalActiveHours+"h","Total time spent")+tile(t.returningVisitors.toLocaleString(),"Returning visitors")+tile(t.engagedPct+"%","Engaged (10s+)")+tile(t.bouncePct+"%","Bounce")+tile(t.jobClicks.toLocaleString(),"Job link clicks");
+  $("tiles").innerHTML=tile(t.visitors.toLocaleString(),"Unique visitors")+tile(t.sessions.toLocaleString(),"Visits")+tile(t.pageviews.toLocaleString(),"Page views")+tile(dur(t.avgActiveSec),"Avg time on site")+tile(dur(t.medianActiveSec),"Median time on site")+tile(t.totalActiveHours+"h","Total time spent")+tile(t.returningVisitors.toLocaleString(),"Returning visitors")+tile(t.engagedPct+"%","Engaged (10s+)")+tile(t.bouncePct+"%","Bounce")+tile(t.jobClicks.toLocaleString(),"Job link clicks")+`<div class="card tile" id="accTile"><b>${UOK?USERS.length.toLocaleString():"…"}</b><span>Accounts created</span></div>`;
   const mx=Math.max(1,...d.daily.map(x=>x.visitors));
   $("chart").innerHTML=d.daily.map(x=>`<i style="height:${x.visitors/mx*100}%" title="${x.d}: ${x.visitors} visitors, ${x.sessions} visits"></i>`).join("");
   $("axis").innerHTML=`<span>${d.daily[0].d}</span><span>${d.daily[d.daily.length-1].d}</span>`;
@@ -73,9 +73,9 @@ $("f").onsubmit=e=>{e.preventDefault();KEY=$("k").value;$("e").textContent="";lo
 $("days").onchange=load;$("rf").onclick=load;$("out").onclick=()=>{try{sessionStorage.removeItem("jfk");localStorage.removeItem("jfk")}catch{};location.reload()};
 if(KEY)load();
 
-let USERS=[];
+let USERS=[],UOK=false;
 async function loadUsers(){try{const r=await fetch("/api/auth/users",{headers:{"x-admin-key":KEY},cache:"no-store"});if(!r.ok)throw new Error("Could not load profiles ("+r.status+")");const d=await r.json();USERS=(d.users||[]).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
-  const opt=USERS.filter(u=>u.marketingOptIn).length;$("usum").textContent=USERS.length?`${USERS.length} member${USERS.length===1?"":"s"} · ${opt} opted in to offers`:"No members yet.";
+  UOK=true;const at=$("accTile");if(at)at.firstChild.textContent=USERS.length.toLocaleString();const opt=USERS.filter(u=>u.marketingOptIn).length;$("usum").textContent=USERS.length?`${USERS.length} member${USERS.length===1?"":"s"} · ${opt} opted in to offers`:"No members yet.";
   $("utable").innerHTML=USERS.length?"<tr><th>Joined</th><th>Name</th><th>Email</th><th>Country / ZIP</th><th>Job families</th><th>Seniority</th><th>Search status</th><th>Offers</th></tr>"+USERS.slice(0,10).map(u=>`<tr><td>${esc((u.createdAt||"").slice(0,10))}</td><td>${esc((u.firstName||"")+" "+(u.lastName||""))}</td><td>${esc(u.email||"")}</td><td>${esc((u.country||"")+" "+(u.zip||""))}</td><td>${esc((u.jobFamilies||[]).join(", "))}</td><td>${esc((u.seniority||[]).join(", "))}</td><td>${esc(u.searchStatus||"")}</td><td>${u.marketingOptIn?"Yes":"No"}</td></tr>`).join(""):"";
  }catch(e){$("usum").textContent=String(e.message||e)}}
 function exportUsers(fmt){if(!USERS.length){$("uMsg").textContent="No members to download.";return}const stamp=new Date().toISOString().slice(0,10);let blob,name;
