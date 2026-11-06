@@ -47,7 +47,7 @@ export async function readFeed(f: Feed): Promise<RawJob[]> {
       company: f.name, title: x.title,
       location: [x.location, ...(x.secondaryLocations || []).map((s: any) => s.location)].filter(Boolean).join("; "),
       department: x.department || x.team || "", url: x.jobUrl || `https://jobs.ashbyhq.com/${f.slug}/${x.id}`,
-      posted: x.publishedAt, remote: x.isRemote ?? null, ...ashbyPay(x),
+      posted: x.publishedAt, remote: x.isRemote ?? null, ...ashbyPay(x, x.descriptionPlain),
     }));
   }
   const j = await getJson(`https://api.lever.co/v0/postings/${f.slug}?mode=json`);
@@ -58,11 +58,14 @@ export async function readFeed(f: Feed): Promise<RawJob[]> {
   }));
 }
 
-function ashbyPay(x: any) {
+function ashbyPay(x: any, text?: string) {
   try {
     const c = (x.compensation?.summaryComponents || []).find((c: any) => /salary/i.test(c.compensationType || "") && c.minValue);
     const p = c && annualPay(c.minValue, c.maxValue, String(c.interval || ""));
-    return p ? { salary_min: p.min, salary_max: p.max, salary_cur: c.currencyCode || "USD" } : {};
+    if (p) return { salary_min: p.min, salary_max: p.max, salary_cur: c.currencyCode || "USD" };
+    // Many Ashby employers leave the structured range empty and state pay in the description instead.
+    const t = payFromText(String(text || ""));
+    return t?.salary_min ? { salary_min: t.salary_min, salary_max: t.salary_max, salary_cur: t.salary_cur || "USD" } : {};
   } catch { return {}; }
 }
 function leverPay(x: any) {

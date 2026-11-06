@@ -152,7 +152,7 @@ export function annualPay(min: any, max: any, interval: string): { min: number; 
 export function payFromText(text: string): { salary_min: number; salary_max: number; salary_cur: string } | null {
   if (!text) return null;
   const t = String(text).replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ");
-  const re = /\$\s?(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])\b/g;
+  const re = /(?<![A-Za-z])\$\s?(\d{2,3}(?:,\d{3})+|\d{2,3}(?:\.\d+)?\s?[kK])\b/g;
   const amt = (x: string) => /k$/i.test(x.trim()) ? parseFloat(x) * 1000 : parseFloat(x.replace(/,/g, ""));
   const hits: { i: number; end: number; v: number }[] = []; let m: RegExpExecArray | null;
   while ((m = re.exec(t))) hits.push({ i: m.index, end: m.index + m[0].length, v: amt(m[1]) });
@@ -162,6 +162,20 @@ export function payFromText(text: string): { salary_min: number; salary_max: num
     if (/\b(per hour|hourly|\/hr|\/hour)\b/i.test(t.slice(a.end, b.end + 30))) continue;
     if (!/(salary|pay|compensation|base|range|earn|wage)/i.test(t.slice(Math.max(0, a.i - 400), a.i + 20))) continue;
     return { salary_min: Math.round(a.v), salary_max: Math.round(b.v), salary_cur: "USD" };
+  }
+  // Pay stated by location instead of as one range ("$212,000 in SF, $201,500 in Austin and $180,000 elsewhere"):
+  // take the lowest and highest figures of the first cluster of amounts that follows a pay keyword.
+  for (let k = 0; k < hits.length; k++) {
+    const a = hits[k];
+    if (a.v < 30000 || a.v > 3_000_000) continue;
+    if (!/(salary|salaries|pay|compensation|base)/i.test(t.slice(Math.max(0, a.i - 300), a.i))) continue;
+    const grp = [a];
+    for (let m = k + 1; m < hits.length && hits[m].i - grp[grp.length - 1].end <= 160; m++) grp.push(hits[m]);
+    if (grp.length < 2) continue;
+    const vals = grp.map(g => g.v).filter(v => v >= 30000 && v <= 3_000_000);
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    if (vals.length < 2 || hi === lo || hi > lo * 2 || /\b(per hour|hourly|\/hr|\/hour)\b/i.test(t.slice(a.end, grp[grp.length - 1].end + 30))) continue;
+    return { salary_min: Math.round(lo), salary_max: Math.round(hi), salary_cur: "USD" };
   }
   return null;
 }
