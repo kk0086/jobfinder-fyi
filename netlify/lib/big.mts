@@ -645,6 +645,8 @@ export const BIG: Reader[] = [
   workday("Memorial Sloan Kettering", "msk.wd108.myworkdayjobs.com", "msk", "MSKCC_Careers_Primary"),
   workday("Remitly", "remitly.wd5.myworkdayjobs.com", "remitly", "Remitly_Careers"),
   radancy("Mayo Clinic", "https://jobs.mayoclinic.org", "", "33647"),
+  workday("Bloom Energy", "bloomenergy.wd1.myworkdayjobs.com", "bloomenergy", "BloomEnergyCareers"),
+  radancy("ALDI", "https://careers.aldi.us", "", "61"),
 ];
 
 export async function crawlBig(i: number) {
