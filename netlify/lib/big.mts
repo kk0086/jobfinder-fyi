@@ -647,6 +647,8 @@ export const BIG: Reader[] = [
   radancy("Mayo Clinic", "https://jobs.mayoclinic.org", "", "33647"),
   workday("Bloom Energy", "bloomenergy.wd1.myworkdayjobs.com", "bloomenergy", "BloomEnergyCareers"),
   radancy("ALDI", "https://careers.aldi.us", "", "61"),
+  workday("3M", "3m.wd1.myworkdayjobs.com", "3m", "Search"),
+  eightfold("Eaton", "eaton.eightfold.ai", "eaton.com", "https://eaton.eightfold.ai/careers/job", [""], 40),
 ];
 
 export async function crawlBig(i: number) {
