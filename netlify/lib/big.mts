@@ -314,6 +314,34 @@ function avature(name: string, origin: string, cap = 3000, assumeUS = true, path
   } };
 }
 
+// Wayfair careers: the list page loads every open role from one JSON endpoint (needs the page's session cookie and CSRF token).
+function wayfair(name: string): Reader {
+  const UAH = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
+  return { name, run: async () => {
+    const pg = await fetch("https://www.wayfair.com/careers/jobs", { headers: { "user-agent": UAH, accept: "text/html" }, signal: AbortSignal.timeout(15000) });
+    if (!pg.ok) throw new Error(`page HTTP ${pg.status}`);
+    const html = await pg.text();
+    const tok = /"csrfToken":"([^"]+)"/.exec(html)?.[1];
+    const ck = (pg.headers.getSetCookie?.() || []).map(c => c.split(";")[0]).join("; ");
+    if (!tok) throw new Error("no csrf token (blocked?)");
+    const r = await fetch("https://www.wayfair.com/a/careers/careers/job_search_data", { headers: { "user-agent": UAH, accept: "application/json", "x-requested-with": "XMLHttpRequest", "x-csrf-token": tok, cookie: ck, referer: "https://www.wayfair.com/careers/jobs" }, signal: AbortSignal.timeout(25000) });
+    if (!r.ok) throw new Error(`data HTTP ${r.status}`);
+    const j: any = await r.json();
+    const list = j?.jobListData;
+    if (!Array.isArray(list) || !list.length) throw new Error("no jobs read");
+    const CC: Record<string, string> = { "United States": "US", Canada: "CA", "United Kingdom": "GB", Ireland: "IE", Germany: "DE", India: "IN", China: "CN" };
+    const raw: RawJob[] = list.filter((x: any) => x.isActive !== false && !x.isHidden && x.title).map((x: any) => {
+      const l = x.location || {};
+      const loc = l.name || [l.city, l.state].filter(Boolean).join(", ");
+      const slug = String(x.title).toLowerCase().replace(/[^a-z0-9]/g, "-");
+      return { company: name, title: x.title, department: x.teamName || x.category?.name || "", location: loc, country: CC[l.country] || undefined,
+        url: `https://www.wayfair.com/careers/job/${slug}/2-${x.requisitionId || x.id}`, posted: x.createdDate ? String(x.createdDate).slice(0, 10) : null,
+        ...(payFromText(x.description || x.briefDescription || "") || {}) } as RawJob;
+    });
+    return { raw, assumeUS: false };
+  } };
+}
+
 // Workable career sites (apply.workable.com/<slug>): public JSON search API, paged by token.
 function workable(name: string, slug: string, assumeUS = false): Reader {
   return { name, run: async () => {
@@ -579,7 +607,7 @@ const SHOPIFY: Reader = { name: "Shopify", run: async () => {
   return { raw: out };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "walmart" | "bytedance" | "avature" | "workable"; name: string; [k: string]: any };
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "walmart" | "bytedance" | "avature" | "workable" | "wayfair"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -595,6 +623,7 @@ export function fromSpec(s: Spec): Reader {
     case "workable": return workable(s.name, s.slug, !!s.assumeUS);
     case "taleo": return taleo(s.name, s.host, s.org, String(s.cws));
     case "vaia": return vaia(s.name, s.page);
+    case "wayfair": return wayfair(s.name);
     case "bytedance": return bytedance(s.name, s.origin);
     case "walmart": return walmart(s.name, (s as any).queries || WM_Q1);
     case "phenom": return phenom(s.name, s.origin, s.locale || "us/en");
@@ -695,6 +724,7 @@ export const BIG: Reader[] = [
   walmart("Walmart", WM_Q2),
   walmart("Walmart", WM_Q3),
   walmart("Walmart", WM_Q4),
+  wayfair("Wayfair"),
 ];
 
 export async function crawlBig(i: number) {
