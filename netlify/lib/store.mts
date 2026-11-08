@@ -61,6 +61,7 @@ async function buildPayload(jobs: Job[], at: string, region: string, more = fals
   const body = more
     ? { generated_at: at || seedAt, region, jobs: lazyRows }
     : { generated_at: at || seedAt, seed_at: seedAt, region, companyCount: new Set(rows.map(j => j.company)).size,
+        new24: rows.filter(j => { const t = Date.parse((j as any).posted || ""); return t && Date.now() - t <= 864e5 && t <= Date.now() + 36e5; }).length,
         lazy: Object.fromEntries(LAZY_ROLES.map(r => [r, lazyRows.filter(j => j.role === r).length])), jobs: rows.filter(j => !LAZY_ROLES.includes(j.role)) };
   return new Uint8Array(gzipSync(Buffer.from(JSON.stringify(body))));
 }
