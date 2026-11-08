@@ -277,9 +277,11 @@ function render() {
   const dm = new Map(dcount); F.domain.forEach(k => { if (!dm.has(k)) dcount.push([k, 0]); });
   $("fdw").setEntries(dcount);
   const week = rows.filter(j => j.ts && NOW - j.ts <= 7 * DAY).length;
+  // Sales, Support and Supply chain jobs load on demand; with no filters on, the total still counts them.
+  const unfilt = !(F.country || F.state || F.dept || F.remote || F.q || F.company.length || F.role.length || F.level.length || F.domain.length || F.pay.length) ? 1 : 0, deferred = Object.values(LAZYC).reduce((a, b) => a + b, 0);
   $("tiles").innerHTML = [
-    [rows.length.toLocaleString(), ("open " + (RG_LABEL[window.__rg] || "") + " roles (matching)").replace("  ", " ")],
-    [new Set(rows.map(j => j.company)).size, "companies"],
+    [(rows.length + unfilt * deferred).toLocaleString(), ("open " + (RG_LABEL[window.__rg] || "") + " roles (matching)").replace("  ", " ")],
+    [unfilt && DATA.companyCount ? DATA.companyCount : new Set(rows.map(j => j.company)).size, "companies"],
     [rows.length ? Math.round(rows.filter(j => j.remote).length / rows.length * 100) + "%" : "0%", "remote"],
     [week, "dated in last 7 days"],
   ].map(([b, s]) => `<div class="tile"><b>${b}</b><span>${s}</span></div>`).join("");
