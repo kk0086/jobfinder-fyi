@@ -118,7 +118,7 @@ dialog#cd::backdrop{background:rgba(0,0,0,.45)}
 <script>window.__rg=(function(){var m=/[?&]region=(all|us|ca|uk|ie|emea)\b/.exec(location.search);return m?m[1]:"all"})();
 window.__load=function(rg){var one=function(r){return fetch("/api/jobs"+(r==="us"?"":"?region="+r)).then(function(x){return x.ok?x.json():null}).catch(function(){return null})};
 if(rg!=="all")return one(rg);
-return Promise.all(["us","ca","uk","ie","emea"].map(one)).then(function(a){if(!a[0])return null;var jobs=[],at="",cs={};a.forEach(function(d){if(!d)return;if(d.generated_at>at)at=d.generated_at;d.jobs.forEach(function(j){jobs.push(j);cs[j.company]=1})});return{generated_at:at,seed_at:a[0].seed_at,companyCount:Object.keys(cs).length,jobs:jobs}})};
+return Promise.all(["us","ca","uk","ie","emea"].map(one)).then(function(a){if(!a[0])return null;var jobs=[],at="",cs={},lz=null;a.forEach(function(d){if(!d)return;if(d.generated_at>at)at=d.generated_at;if(d.lazy){lz=lz||{};Object.keys(d.lazy).forEach(function(k){lz[k]=(lz[k]||0)+d.lazy[k]})}d.jobs.forEach(function(j){jobs.push(j);cs[j.company]=1})});return{generated_at:at,seed_at:a[0].seed_at,companyCount:a[0].companyCount&&a.length===1?a[0].companyCount:Math.max.apply(null,a.map(function(d){return d?d.companyCount||0:0}).concat([Object.keys(cs).length])),lazy:lz,jobs:jobs}})};
 window.__jp=window.__load(window.__rg);</script>
 </head>
 <body>
@@ -138,7 +138,7 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
     <div class="sin"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="q" type="search" placeholder="Job title, company or location" aria-label="Search jobs" autocomplete="off"></div>
     <button type="button" id="sgo">Search jobs</button>
   </div>
-  <div class="pop" id="pop"><span>Popular:</span><button type="button" data-q="Full Stack">Full Stack</button><button type="button" data-q="iOS">iOS</button><button type="button" data-q="Product Manager">Product Manager</button><button type="button" data-q="UX Design">UX Design</button><button type="button" data-q="AI Engineer">AI Engineer</button><button type="button" data-q="" data-remote="1">Remote only</button></div>
+  <div class="pop" id="pop"><span>Popular:</span><button type="button" data-q="Full Stack">Full Stack</button><button type="button" data-q="iOS">iOS</button><button type="button" data-q="Product Manager">Product Manager</button><button type="button" data-q="UX Design">UX Design</button><button type="button" data-q="AI Engineer">AI Engineer</button><button type="button" data-q="Sales">Sales</button><button type="button" data-q="Supply Chain">Supply Chain</button><button type="button" data-q="" data-remote="1">Remote only</button></div>
   <button type="button" class="ftog" id="ftog" aria-expanded="false" aria-controls="side">Filters</button>
   <div class="layout">
   <aside class="side" id="side">
@@ -330,7 +330,7 @@ function init() {
   msMake("fd", "fdomain", "domain", "All domains", "domains", []);
   msMake("fc", "fc", "company", "All companies", "companies", count(jobs, j => j.company));
   const FAM = {"Data engineering": "Data engineering, ML & BI"}, FORD = ["Product management", "Software engineering", "Data engineering", "Technical program management", "Program management", "UX design", "Human resources", "Legal", "Financial analyst", "Bizdev", "Marketing", "Customer support", "Sales", "Supply chain & logistics", "Operations", "Executive leadership"];
-  const rc = new Map(count(jobs, j => j.role)); msMake("frl", "frole", "role", "All job families", "job families", FORD.filter(k => rc.get(k)).map(k => [k, rc.get(k)]), FAM, false);
+  const FORD_ = FORD, famEntries = () => { const rc = new Map(count(jobs, j => j.role)); return FORD_.filter(k => rc.get(k) || LAZYC[k]).map(k => [k, rc.get(k) || LAZYC[k]]); }; window.__fam = famEntries; msMake("frl", "frole", "role", "All job families", "job families", famEntries(), FAM, false);
   { const pc = count(jobs.filter(j => j.salary_min), BAND); msMake("fpy", "fpay", "pay", "Any salary", "salary ranges", BANDS.map(([k]) => [k, (pc.find(x => x[0] === k) || [0, 0])[1]]), Object.fromEntries(BANDS), false); }
   const SORD = ["Intern", "Entry", "Mid", "Senior", "Manager", "Director", "Principal+", "Executive"], sc = new Map(count(jobs, j => j.seniority)); msMake("fsn", "fl", "level", "All seniority", "levels", [...SORD, ...[...sc.keys()].filter(k => !SORD.includes(k))].filter(k => sc.get(k)).map(k => [k, sc.get(k)]), {}, false);
   fillSelect("fs", count(jobs, j => j.states));
@@ -348,13 +348,36 @@ function init() {
 }
 function chips() { document.querySelectorAll("#pop button").forEach(b => b.classList.toggle("on", b.dataset.remote ? F.remote === "1" : (b.dataset.q && F.q === b.dataset.q))); }
 function sync() { chips(); $("fsort").value = F.sort; msSync(); $("fs").value = F.state; $("fr").value = F.remote; }
+// Big families (Sales, Customer support, Supply chain & logistics) arrive on demand from /api/jobs-more; the main file only carries their counts.
+let LAZYC = {}, lazyState = 0;
+const LAZYQ = /\b(sales|account|customer|support|service|supply|logistic|warehouse|driver|retail|buyer|procure|fulfil|inventory|freight|shipping|mechanic|courier|forklift)/i;
+async function loadLazy() {
+  if (lazyState) return; lazyState = 1;
+  try {
+    const rgs = window.__rg === "all" ? ["us", "ca", "uk", "ie", "emea"] : [window.__rg];
+    const a = await Promise.all(rgs.map(r => fetch("/api/jobs-more" + (r === "us" ? "" : "?region=" + r)).then(x => x.ok ? x.json() : Promise.reject()).catch(() => null)));
+    if (a.some(d => !d)) throw 0;
+    const have = new Set(jobs.map(j => j.url)), add = [];
+    a.forEach(d => d.jobs.forEach(j => { if (!have.has(j.url)) { have.add(j.url); add.push(prep(j)); } }));
+    jobs = jobs.concat(add); lazyState = 2; LAZYC = {};
+    $("fcw").setEntries(count(jobs, j => j.company)); $("frlw").setEntries(window.__fam()); fillSelect("fs", count(jobs, j => j.states));
+    const SORD = ["Intern", "Entry", "Mid", "Senior", "Manager", "Director", "Principal+", "Executive"], sc = new Map(count(jobs, j => j.seniority)); $("fsnw").setEntries([...SORD, ...[...sc.keys()].filter(k => !SORD.includes(k))].filter(k => sc.get(k)).map(k => [k, sc.get(k)]));
+    sync();
+  } catch (e) { lazyState = -1; }
+  render();
+}
+{ const r0 = render; render = function () {
+    if (lazyState === 0 && (F.role.some(k => LAZYC[k]) || (F.q && F.q.length > 2 && LAZYQ.test(F.q) && Object.keys(LAZYC).length))) loadLazy();
+    const out = r0.apply(this, arguments);
+    if (lazyState === 1) $("list").innerHTML = '<div class="meta">Loading jobs…</div>';
+    return out; }; }
 async function boot() {
   if (DATA.live) {
     $("list").innerHTML = '<div class="meta">Loading jobs…</div>';
     try { const j = window.__jp ? await window.__jp : null; if (j) DATA = j; else { const j2 = await window.__load(window.__rg); if (!j2) throw 0; DATA = j2; } }
     catch (e) { $("list").innerHTML = '<div class="meta">Could not load jobs. Please refresh the page.</div>'; if (window.hideSplash) window.hideSplash(); return; }
   }
-  jobs = DATA.jobs.map(prep);
+  jobs = DATA.jobs.map(prep); LAZYC = DATA.lazy || {};
   init();
   if (window.hideSplash) window.hideSplash();
 }

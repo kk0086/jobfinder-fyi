@@ -50,11 +50,19 @@ export async function loadAll() {
   return { jobs: unique, at, blobs };
 }
 
-async function buildPayload(jobs: Job[], at: string, region: string) {
+// Big job families are served separately (/api/jobs-more) so the first page load stays small; the main payload only carries their counts.
+export const LAZY_ROLES = ["Customer support", "Sales", "Supply chain & logistics"];
+
+async function buildPayload(jobs: Job[], at: string, region: string, more = false) {
   const rows = jobs.filter(j => regionOf((j as any).cc) === region);
   const { gzipSync } = await import("node:zlib");
   const seedAt = (seed as any).generated_at as string;
-  return new Uint8Array(gzipSync(Buffer.from(JSON.stringify({ generated_at: at || seedAt, seed_at: seedAt, region, companyCount: new Set(rows.map(j => j.company)).size, jobs: rows }))));
+  const lazyRows = rows.filter(j => LAZY_ROLES.includes(j.role));
+  const body = more
+    ? { generated_at: at || seedAt, region, jobs: lazyRows }
+    : { generated_at: at || seedAt, seed_at: seedAt, region, companyCount: new Set(rows.map(j => j.company)).size,
+        lazy: Object.fromEntries(LAZY_ROLES.map(r => [r, lazyRows.filter(j => j.role === r).length])), jobs: rows.filter(j => !LAZY_ROLES.includes(j.role)) };
+  return new Uint8Array(gzipSync(Buffer.from(JSON.stringify(body))));
 }
 
 // Prebuilt copies of /api/jobs and the /jobs/<slug> pages, written by snapshot-scheduled so visitors never wait on loadAll().
@@ -70,6 +78,9 @@ export async function writeSnapshot() {
     const body = await buildPayload(jobs, at, r);
     await store.set(`snap-jobs-${r}`, body.slice().buffer, { metadata: { t } });
     cache.set(r, { t, body });
+    const more = await buildPayload(jobs, at, r, true);
+    await store.set(`snap-jobs-more-${r}`, more.slice().buffer, { metadata: { t } });
+    cache.set(r + "+more", { t, body: more });
   }
   for (const l of LANDINGS) await store.set(`snap-page-${l.slug}`, renderLanding(l, jobs as any, at || new Date().toISOString()).html, { metadata: { t } });
   return { regions: REGIONS.length, pages: LANDINGS.length, jobs: jobs.length, at };
@@ -81,16 +92,17 @@ export async function snapshotPage(slug: string) {
 }
 
 // One gzipped payload per region ("us" is the default; roles without a country code are US).
-export async function jobsPayload(region = "us", force = false) {
+export async function jobsPayload(region = "us", force = false, more = false) {
   if (!REGIONS.includes(region)) region = "us";
-  const hit = cache.get(region);
+  const key = more ? region + "+more" : region;
+  const hit = cache.get(key);
   if (!force && hit && Date.now() - hit.t < 60 * 1000) return hit.body;
   if (!force) {
-    const r = await getStore("feed").getWithMetadata(`snap-jobs-${region}`, { type: "arrayBuffer" }).catch(() => null);
-    if (r && isFresh(r.metadata)) { const body = new Uint8Array(r.data); cache.set(region, { t: Date.now(), body }); return body; }
+    const r = await getStore("feed").getWithMetadata(`snap-jobs-${more ? "more-" : ""}${region}`, { type: "arrayBuffer" }).catch(() => null);
+    if (r && isFresh(r.metadata)) { const body = new Uint8Array(r.data); cache.set(key, { t: Date.now(), body }); return body; }
   }
   const { jobs, at } = await loadAll();
-  const body = await buildPayload(jobs, at, region);
-  cache.set(region, { t: Date.now(), body });
+  const body = await buildPayload(jobs, at, region, more);
+  cache.set(key, { t: Date.now(), body });
   return body;
 }
