@@ -419,7 +419,7 @@ function sync(){var els=document.querySelectorAll(".job[data-u]");for(var i=0;i<
 if(b){b.classList.toggle("on",sv);b.setAttribute("aria-label",sv?"Saved. Click to remove":"Save job");b.title=sv?"Saved. Click to remove":"Save job"}
 if(c){c.classList.toggle("on",ap);c.setAttribute("aria-checked",ap?"true":"false")}els[i].classList.toggle("sd",sv||ap)}
 var n1=document.getElementById("pmS"),n2=document.getElementById("pmA");if(n1)n1.textContent=Object.keys(SV).length;if(n2)n2.textContent=Object.keys(AP).length}
-window.__jfSync=sync;
+window.__jfSync=sync;window.__jfGate=openGate;
 function post(op,job){return fetch("/api/auth/job",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({op:op,job:job})}).then(function(r){return r.json().then(function(d){return{ok:r.ok,s:r.status,d:d}})})}
 document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest(".act button");if(!b)return;e.preventDefault();e.stopPropagation();
 var u=b.parentNode.getAttribute("data-u");
@@ -428,7 +428,7 @@ var job=(window.__jm||{})[u];if(!job)return;var isS=b.getAttribute("data-a")==="
 if(was)delete map[u];else map[u]=1;sync();
 post((isS?"":"")+(isS?(was?"unsave":"save"):(was?"unapply":"apply")),job).then(function(r){if(!r.ok){if(was)map[u]=1;else delete map[u];sync();if(r.s===401)location.href="/login.html?next="+encodeURIComponent(location.pathname+location.search);else alert(r.d.error||"Something went wrong. Please try again.")}}).catch(function(){if(was)map[u]=1;else delete map[u];sync()})},true);
 fetch("/api/auth/me",{credentials:"same-origin"}).then(function(r){return r.ok?r.json():null}).then(function(d){
-if(!d||!d.user){nudge();lockFilters();return}ME=d.user;(d.saved||[]).forEach(function(u){SV[u]=1});(d.applied||[]).forEach(function(u){AP[u]=1});window.__jfHide={};(d.applied||[]).forEach(function(u){window.__jfHide[u]=1});try{if(typeof jobs!=="undefined"&&jobs&&jobs.length&&typeof render==="function")render()}catch(e){}
+if(!d||!d.user){window.__jfOut=true;nudge();lockFilters();return}ME=d.user;(d.saved||[]).forEach(function(u){SV[u]=1});(d.applied||[]).forEach(function(u){AP[u]=1});window.__jfHide={};(d.applied||[]).forEach(function(u){window.__jfHide[u]=1});try{if(typeof jobs!=="undefined"&&jobs&&jobs.length&&typeof render==="function")render()}catch(e){}
 var nm=(d.user.firstName+" "+(d.user.lastName||"")).trim();
 a.innerHTML='<span class="hi" id="pmHi"></span><div class="pm" id="pm"><button type="button" class="pmb" id="pmb" aria-haspopup="true" aria-expanded="false" aria-label="Open profile menu"><span class="av"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></span><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg></button><div class="pmn" id="pmn"><div class="who"><b id="pmName"></b><span id="pmMail"></span></div><a href="/account.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Account details</a><a href="/saved.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Saved jobs<span class="n" id="pmS">0</span></a><a href="/applied.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></svg>Application dashboard<span class="n" id="pmA">0</span></a><hr><button type="button" id="pmOut"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Log out</button></div></div>';
 document.getElementById("pmName").textContent=nm;var hi=document.getElementById("pmHi");hi.textContent="Hi "+nm;var w=document.createElement("span");w.className="wl";w.textContent="Welcome to Jobfinder";hi.appendChild(w);document.getElementById("pmMail").textContent=d.user.email;
@@ -438,6 +438,23 @@ document.addEventListener("click",function(e){if(!pm.contains(e.target)){pm.clas
 document.addEventListener("keydown",function(e){if(e.key==="Escape"){pm.classList.remove("open");pb.setAttribute("aria-expanded","false")}});
 document.getElementById("pmOut").onclick=function(){fetch("/api/auth/logout",{method:"POST",credentials:"same-origin"}).then(function(){location.reload()})};
 sync()}).catch(function(){})})();
+
+(function(){
+if(typeof render!=="function"||typeof F==="undefined")return;
+var ok=null,MSG="<b>Create a free account</b> to save jobs, track applications and use advanced filters.";
+function snap(){return JSON.parse(JSON.stringify(F))}
+function active(){return(window.__rg&&window.__rg!=="all"?1:0)+(F.role.length?1:0)+(F.company.length?1:0)+(F.domain.length?1:0)+(F.level.length?1:0)+(F.country?1:0)+(F.state?1:0)+(F.dept?1:0)+(F.remote?1:0)}
+var r0=render;ok=snap();
+render=function(){
+  if(window.__jfOut===true&&ok&&active()>2){
+    Object.keys(F).forEach(function(k){delete F[k]});Object.assign(F,ok);
+    try{sync()}catch(e){}
+    ["fd","fc","frl","fpy","fsn"].forEach(function(b){var w=document.getElementById(b+"w");if(w&&w.sync)w.sync()});
+    ["fs","fr"].forEach(function(id){var el=document.getElementById(id),k=id==="fs"?"state":"remote";if(el&&F[k]!==undefined)el.value=F[k]});
+    if(window.__jfGate)window.__jfGate(MSG,false);
+  } else ok=snap();
+  return r0.apply(this,arguments)};
+})();
 </script>
 </body>
 </html>
