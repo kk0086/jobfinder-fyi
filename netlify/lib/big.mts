@@ -351,6 +351,47 @@ function phenom(name: string, origin: string, locale = "us/en", cap = 2000): Rea
   } };
 }
 
+// Walmart careers: its search endpoint returns roughly the 100-170 best matches per phrase, so each reader runs a set of role phrases and merges the results.
+const WM_Q1 = ["software engineer", "data scientist", "machine learning", "product manager", "technical program manager", "cloud", "devops", "site reliability", "cybersecurity", "mobile", "ios", "android", "backend", "frontend", "full stack", "platform", "network", "database", "QA test", "ux designer"];
+const WM_Q2 = ["data analyst", "business intelligence", "analytics", "director", "senior director", "vice president", "advertising", "marketing", "ecommerce", "pricing", "merchandising", "buyer", "category", "strategy", "consultant", "program manager", "project manager", "operations manager", "supply chain", "logistics"];
+const WM_Q3 = ["finance", "accounting", "tax", "treasury", "audit", "risk", "compliance", "legal counsel", "human resources", "recruiter", "talent", "communications", "content", "brand", "creative", "sales", "account manager", "customer", "sourcing", "procurement"];
+const WM_Q4 = ["real estate", "facilities", "construction", "energy", "sustainability", "health", "pharmacy", "clinical", "payments", "fintech", "insurance", "research", "scientist", "architect", "engineer", "manager", "specialist", "analyst", "associate", "lead"];
+function walmart(name: string, queries: string[]): Reader {
+  const gql = async (query: string, page: number) => {
+    const r = await fetch("https://careers.walmart.com/api/graphql", { method: "POST", signal: AbortSignal.timeout(12000),
+      headers: { "content-type": "application/json", accept: "application/json", "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", origin: "https://careers.walmart.com", referer: "https://careers.walmart.com/us/en/results" },
+      body: JSON.stringify({ queryId: "b09f52ab-9c7f-421f-8a2a-d990b6f288a8", variables: { request: { query, isBasicSearch: false, filter: "" }, locale: "en_US", page, size: 100 } }) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j: any = await r.json();
+    const jobs = j?.data?.hybridCombinedSearchV2?.jobs;
+    if (!Array.isArray(jobs)) throw new Error("no data");
+    return jobs as any[];
+  };
+  return { name, run: async () => {
+    const seen = new Map<string, RawJob>();
+    const deadline = Date.now() + 21000;
+    let okQueries = 0;
+    await pool(queries, 5, async q => {
+      let quiet = 0;
+      for (let p = 0; p < 12 && quiet < 2 && Date.now() < deadline; p++) {
+        const jobs = await gql(q, p);
+        if (p === 0) okQueries++;
+        let fresh = 0;
+        for (const j of jobs) {
+          const m = j.metadata || {}; const id = m.jobId; if (!id || seen.has(id) || !m.jobPostingTitle) continue;
+          fresh++;
+          seen.set(id, { company: name, title: m.jobPostingTitle, department: m.workgroupDesc || "", country: "US",
+            location: [m.primaryLocationCity ? String(m.primaryLocationCity).toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : "", m.primaryLocationState].filter(Boolean).join(", "),
+            url: `https://careers.walmart.com/us/en/jobs/${id}`, posted: null } as RawJob);
+        }
+        quiet = fresh ? 0 : quiet + 1;
+      }
+    });
+    if (!okQueries || !seen.size) throw new Error("no results");
+    return { raw: [...seen.values()], assumeUS: true };
+  } };
+}
+
 // Atlassian careers: one JSON listing of every role (the site's own endpoint).
 const ATLASSIAN: Reader = { name: "Atlassian", run: async () => {
   const j = await jget("https://www.atlassian.com/endpoint/careers/listings");
@@ -538,7 +579,7 @@ const SHOPIFY: Reader = { name: "Shopify", run: async () => {
   return { raw: out };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "bytedance" | "avature" | "workable"; name: string; [k: string]: any };
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "walmart" | "bytedance" | "avature" | "workable"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -555,6 +596,7 @@ export function fromSpec(s: Spec): Reader {
     case "taleo": return taleo(s.name, s.host, s.org, String(s.cws));
     case "vaia": return vaia(s.name, s.page);
     case "bytedance": return bytedance(s.name, s.origin);
+    case "walmart": return walmart(s.name, (s as any).queries || WM_Q1);
     case "phenom": return phenom(s.name, s.origin, s.locale || "us/en");
   }
   throw new Error("unknown kind");
