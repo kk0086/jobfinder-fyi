@@ -11,7 +11,7 @@ const CODE_TTL = 10 * 60_000, KEEP_TTL = 30 * 86_400_000, SHORT_TTL = 24 * 3_600
 const MAX_LOGIN_FAILS = 8, LOCK_MS = 15 * 60_000, MAX_LOGINS_PER_IP_HOUR = 40;
 const MIN_PW = 6, MAX_PW = 128;
 
-const FAMILIES = ["Product management", "Software engineering", "Data engineering", "Technical program management", "Program management", "UX design", "Human resources", "Legal", "Financial analyst", "Bizdev", "Marketing", "Operations", "Executive leadership"];
+const FAMILIES = ["Product management", "Software engineering", "Data engineering", "Technical program management", "Program management", "UX design", "Human resources", "Legal", "Financial analyst", "Bizdev", "Marketing", "Customer support", "Sales", "Supply chain & logistics", "Operations", "Executive leadership"];
 const LEVELS = ["Entry", "Mid-level", "Senior", "Staff / Principal", "Director", "VP and up"];
 const SALARY = ["", "Under $100K", "$100K to $150K", "$150K to $200K", "$200K to $300K", "$300K and above"];
 const WORKAUTH = ["", "Authorized to work, no sponsorship needed", "Need visa sponsorship", "Prefer not to say"];

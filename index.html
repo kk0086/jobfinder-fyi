@@ -329,7 +329,7 @@ function init() {
   $("ftog").onclick = () => { const o = $("side").classList.toggle("open"); $("ftog").setAttribute("aria-expanded", o); };
   msMake("fd", "fdomain", "domain", "All domains", "domains", []);
   msMake("fc", "fc", "company", "All companies", "companies", count(jobs, j => j.company));
-  const FAM = {"Data engineering": "Data engineering, ML & BI"}, FORD = ["Product management", "Software engineering", "Data engineering", "Technical program management", "Program management", "UX design", "Human resources", "Legal", "Financial analyst", "Bizdev", "Marketing", "Operations", "Executive leadership"];
+  const FAM = {"Data engineering": "Data engineering, ML & BI"}, FORD = ["Product management", "Software engineering", "Data engineering", "Technical program management", "Program management", "UX design", "Human resources", "Legal", "Financial analyst", "Bizdev", "Marketing", "Customer support", "Sales", "Supply chain & logistics", "Operations", "Executive leadership"];
   const rc = new Map(count(jobs, j => j.role)); msMake("frl", "frole", "role", "All job families", "job families", FORD.filter(k => rc.get(k)).map(k => [k, rc.get(k)]), FAM, false);
   { const pc = count(jobs.filter(j => j.salary_min), BAND); msMake("fpy", "fpay", "pay", "Any salary", "salary ranges", BANDS.map(([k]) => [k, (pc.find(x => x[0] === k) || [0, 0])[1]]), Object.fromEntries(BANDS), false); }
   const SORD = ["Intern", "Entry", "Mid", "Senior", "Manager", "Director", "Principal+", "Executive"], sc = new Map(count(jobs, j => j.seniority)); msMake("fsn", "fl", "level", "All seniority", "levels", [...SORD, ...[...sc.keys()].filter(k => !SORD.includes(k))].filter(k => sc.get(k)).map(k => [k, sc.get(k)]), {}, false);
