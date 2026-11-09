@@ -258,12 +258,12 @@ function sitemapJobs(name: string, sitemap: string, urlRe: RegExp, part = 0, par
 }
 
 // Oracle Recruiting (HCM) candidate sites: same API JPMorgan uses; US roles only.
-function oracle(name: string, host: string, site: string): Reader {
+function oracle(name: string, host: string, site: string, cap = 3000): Reader {
   const api = (o: number) => `https://${host}/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&expand=requisitionList.secondaryLocations&finder=findReqs;siteNumber=${site},limit=50,offset=${o},sortBy=POSTING_DATES_DESC`;
   return { name, run: async () => {
     const first = await jget(api(0), { headers: { accept: "application/json" } });
     const total = Number(first?.items?.[0]?.TotalJobsCount || 0);
-    const rest = await pool(range(50, Math.min(total, 3000), 50), 8, o => jget(api(o), { headers: { accept: "application/json" } }));
+    const rest = await pool(range(50, Math.min(total, cap), 50), 8, o => jget(api(o), { headers: { accept: "application/json" } }));
     const raw: RawJob[] = [first, ...rest].flatMap(p => p?.items?.[0]?.requisitionList || []).filter((p: any) => /^(US|USA|United States)$/i.test(p.PrimaryLocationCountry || "")).map((p: any) => ({
       company: name, title: p.Title, location: (p.PrimaryLocation || "").replace(/,?\s*United States$/, ""), department: p.JobFamily || "",
       url: `https://${host}/hcmUI/CandidateExperience/en/sites/${site}/job/${p.Id}`, posted: p.PostedDate || null,
@@ -617,7 +617,7 @@ export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jib
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
-    case "oracle": return oracle(s.name, s.host, s.site);
+    case "oracle": return oracle(s.name, s.host, s.site, s.cap || 3000);
     case "radancy": return radancy(s.name, s.origin, s.prefix || "", String(s.org));
     case "eightfold": return eightfold(s.name, s.host, s.domain, s.careersBase, s.queries || QUERIES, s.pagesPer || 30);
     case "jibe": return jibe(s.name, s.origin, !!s.all);
@@ -731,6 +731,8 @@ export const BIG: Reader[] = [
   walmart("Walmart", WM_Q3),
   walmart("Walmart", WM_Q4),
   wayfair("Wayfair"),
+  oracle("Marriott", "ejwl.fa.us2.oraclecloud.com", "MI_CS_1", 5000),
+  workday("Yahoo", "ouryahoo.wd5.myworkdayjobs.com", "ouryahoo", "careers"),
 ];
 
 export async function crawlBig(i: number) {
