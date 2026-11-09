@@ -148,6 +148,27 @@ export function annualPay(min: any, max: any, interval: string): { min: number; 
   if (a < 15000 || b > 5_000_000 || b < a) return null;
   return { min: Math.round(a), max: Math.round(b) };
 }
+// True when a description says the role needs US citizenship or a green card ("Must be a U.S. citizen or green card holder", "US Citizens and Permanent Residents only").
+export function waFromText(text: string): boolean {
+  if (!text) return false;
+  const t = String(text).replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/g, " ").replace(/&amp;/g, "&").replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ");
+  const cit = "(?:u\\.?s\\.?|united states|american)\\s+citizen(?:ship|s)?";
+  const gc = "(?:green\\s*card|permanent\\s+resident|lawful\\s+permanent)";
+  const res = [
+    new RegExp("(?:must|required to|need to|have to|will need to)\\s+(?:be|hold|have)\\s+(?:a\\s+|an\\s+)?(?:current\\s+)?" + cit, "i"),
+    new RegExp(cit + "\\s+(?:or|and|/)\\s+(?:a\\s+)?" + gc + "[^.]{0,40}(?:only|required|must)", "i"),
+    new RegExp("(?:only|limited to|restricted to|open to)\\s+(?:u\\.?s\\.?\\s+)?citizens?[^.]{0,40}" + gc, "i"),
+    new RegExp("(?:must|required to)\\s+be\\s+(?:a\\s+)?(?:u\\.?s\\.?\\s+)?(?:citizen|national)[^.]{0,30}" + gc, "i"),
+    new RegExp(cit + "\\s+(?:is|are)\\s+required", "i"),
+    new RegExp("(?:requires?|require)\\s+(?:u\\.?s\\.?|united states)\\s+citizenship", "i"),
+    new RegExp("(?:u\\.?s\\.?|united states)\\s+citizenship\\s+(?:is\\s+)?(?:required|mandatory)", "i"),
+  ];
+  return res.some(r => r.test(t));
+}
+// Pay range plus the work-authorization flag, in the shape readers spread into a RawJob.
+export function descInfo(text: string): { salary_min?: number; salary_max?: number; salary_cur?: string; wa?: boolean } {
+  return { ...(payFromText(text) || {}), ...(waFromText(text) ? { wa: true } : {}) };
+}
 // Finds a posted USD pay range in free text ("The base pay range is $150,000 - $200,000"). Returns null when there is no clear range.
 export function payFromText(text: string): { salary_min: number; salary_max: number; salary_cur: string } | null {
   if (!text) return null;
@@ -257,7 +278,7 @@ export function roleFamily(title: string, department: string): string | null {
 }
 
 // ---- Job normalization --------------------------------------------------
-export interface RawJob { company: string; title: string; location: string; department: string; url: string; posted?: string | null; updated?: string | null; remote?: boolean | null; salary_min?: number | null; salary_max?: number | null; salary_cur?: string | null; gh_id?: number | string | null }
+export interface RawJob { company: string; title: string; location: string; department: string; url: string; posted?: string | null; updated?: string | null; remote?: boolean | null; salary_min?: number | null; salary_max?: number | null; salary_cur?: string | null; gh_id?: number | string | null; wa?: boolean }
 
 const iso = (s?: string | number | null) => {
   if (s === undefined || s === null || s === "") return null;
@@ -285,7 +306,7 @@ export function normalizeJob(j: RawJob, opts: { assumeUS?: boolean } = {}) {
     department: dept || inferDepartment(j.title), department_inferred: !dept,
     role: family, domains: findDomains(j.title, dept), example: false,
     seniority: seniority(j.title), remote, posted: iso(j.posted), updated: iso(j.updated),
-    url: j.url.trim(), salary_min: j.salary_min ?? null, salary_max: j.salary_max ?? null, ...(j.salary_min ? { salary_cur: (j.salary_cur || "USD").toUpperCase() } : {}), ...(j.gh_id ? { gh_id: j.gh_id } : {}), ...(cc ? { cc } : {}),
+    url: j.url.trim(), salary_min: j.salary_min ?? null, salary_max: j.salary_max ?? null, ...(j.salary_min ? { salary_cur: (j.salary_cur || "USD").toUpperCase() } : {}), ...(j.gh_id ? { gh_id: j.gh_id } : {}), ...(cc ? { cc } : {}), ...(j.wa ? { wa: 1 } : {}),
   };
 }
 export type Job = NonNullable<ReturnType<typeof normalizeJob>>;

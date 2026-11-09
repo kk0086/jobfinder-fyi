@@ -1,4 +1,4 @@
-import { normalizeJob, annualPay, payFromText, type Job, type RawJob } from "./normalize.mts";
+import { normalizeJob, annualPay, payFromText, descInfo, type Job, type RawJob } from "./normalize.mts";
 import { getStore } from "@netlify/blobs";
 import extra from "./extra.json" with { type: "json" };
 
@@ -84,7 +84,7 @@ const AMAZON: Reader = { name: "Amazon", run: async () => {
     for (const p of j?.jobs || []) {
       const [, st, city] = String(p.location || "").split(", ");
       const d = p.posted_date ? new Date(p.posted_date + " 12:00 UTC") : null;
-      jobs.set(String(p.id_icims || p.id), { company: "Amazon", title: p.title, location: city ? `${city}, ${st}` : String(p.location || ""), department: p.job_category || "", url: "https://www.amazon.jobs" + p.job_path, posted: d && !isNaN(+d) ? d.toISOString() : null, ...(payFromText([p.description, p.basic_qualifications, p.preferred_qualifications].filter(Boolean).join(" ")) || {}) });
+      jobs.set(String(p.id_icims || p.id), { company: "Amazon", title: p.title, location: city ? `${city}, ${st}` : String(p.location || ""), department: p.job_category || "", url: "https://www.amazon.jobs" + p.job_path, posted: d && !isNaN(+d) ? d.toISOString() : null, ...descInfo([p.description, p.basic_qualifications, p.preferred_qualifications].filter(Boolean).join(" ")) });
     }
   });
   return { raw: [...jobs.values()] };
@@ -281,7 +281,7 @@ function oracle(name: string, host: string, site: string, cap = 3000): Reader {
 function jibePay(d: any) {
   const p = d.salary_min_value > 0 ? annualPay(d.salary_min_value, d.salary_max_value || d.salary_min_value, String(d.salary_value_type || d.salary_period || "year")) : null;
   if (p) return { salary_min: p.min, salary_max: p.max, salary_cur: String(d.salary_currency || "USD") };
-  return payFromText([d.description, d.responsibilities, d.qualifications, d.compensation].filter(Boolean).join(" ")) || {};
+  return descInfo([d.description, d.responsibilities, d.qualifications, d.compensation].filter(Boolean).join(" "));
 }
 function jibe(name: string, origin: string, all = false): Reader {
   return { name, run: async () => {
@@ -358,7 +358,7 @@ function wayfair(name: string): Reader {
     if (!rows.length) throw new Error("no jobs read");
     const raw: RawJob[] = rows.map((x: any) => ({ company: name, title: x.title, department: x.team || "", location: x.loc || "", country: CC[x.country] || undefined,
       url: `https://www.wayfair.com/careers/job/${slugOf(x.title)}/2-${x.id}`, posted: x.created ? String(x.created).slice(0, 10) : null,
-      ...(payFromText(String(x.desc || "")) || {}) } as RawJob));
+      ...descInfo(String(x.desc || "")) } as RawJob));
     return { raw, assumeUS: false };
   } };
 }
@@ -376,7 +376,7 @@ function icims(name: string, hosts: string[]): Reader {
       for (const c of rows) {
         const a = /href="([^"]*\/jobs\/\d+\/[^"]*\/job)[^"]*"[^>]*>[\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>/.exec(c); if (!a) continue; n++;
         const l = /Job Locations<\/span>\s*<span[^>]*>([\s\S]*?)<\/span>/.exec(c); const d = /class="col-xs-12 description">([\s\S]*?)<\/div>/.exec(c);
-        raw.push({ company: name, title: dec(a[2]), location: l ? loc(dec(l[1])) : "", department: "", url: a[1], posted: null, ...(d ? payFromText(dec(d[1])) || {} : {}) } as RawJob);
+        raw.push({ company: name, title: dec(a[2]), location: l ? loc(dec(l[1])) : "", department: "", url: a[1], posted: null, ...(d ? descInfo(dec(d[1])) : {}) } as RawJob);
       }
       if (!n) break;
     }
@@ -470,7 +470,7 @@ const ATLASSIAN: Reader = { name: "Atlassian", run: async () => {
   const raw: RawJob[] = j.map((e: any) => {
     const us = (e.locations || []).filter((l: string) => /united states|\bUSA?\b/i.test(l));
     return us.length ? { company: "Atlassian", title: e.title, department: e.category || "", location: us.map((l: string) => l.split(" - ").slice(-1)[0].trim() || l).join("; "),
-      url: `https://www.atlassian.com/company/careers/details/${e.id}`, posted: e.portalJobPost?.updatedDate ? String(e.portalJobPost.updatedDate).slice(0, 10) : null, ...(payFromText([e.compensation, e.overview, e.responsibilities, e.qualifications].filter(Boolean).join(" ")) || {}) } : null;
+      url: `https://www.atlassian.com/company/careers/details/${e.id}`, posted: e.portalJobPost?.updatedDate ? String(e.portalJobPost.updatedDate).slice(0, 10) : null, ...descInfo([e.compensation, e.overview, e.responsibilities, e.qualifications].filter(Boolean).join(" ")) } : null;
   }).filter(Boolean) as RawJob[];
   return { raw, assumeUS: true };
 } };
@@ -590,7 +590,7 @@ function bytedancePay(x: any) {
   const i = x.job_post_info || {};
   const p = i.min_salary > 0 ? annualPay(i.min_salary, i.max_salary || i.min_salary, "year") : null;
   if (p) return { salary_min: p.min, salary_max: p.max, salary_cur: String(i.currency || "USD") };
-  return payFromText([x.description, x.requirement].filter(Boolean).join(" ")) || {};
+  return descInfo([x.description, x.requirement].filter(Boolean).join(" "));
 }
 // ByteDance careers (joinbytedance.com): the public search API the site itself calls.
 function bytedance(name: string, origin: string, cap = 1500): Reader {

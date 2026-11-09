@@ -108,7 +108,7 @@ dialog#cd::backdrop{background:rgba(0,0,0,.45)}
 .side{flex:0 0 250px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
 .side .sh{display:flex;justify-content:space-between;align-items:center}
 .side .sh button{border:0;background:none;color:#0f566f;font:inherit;font-size:13px;cursor:pointer;padding:0}
-.fl{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}.fl[hidden]{display:none}.pay{color:#0b7a4b;font-weight:600}.tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:4px;border:1px solid var(--muted);border-radius:50%;font:600 10px/1 system-ui,sans-serif;font-style:normal;color:var(--muted);cursor:help;position:relative;vertical-align:middle}.tip:hover::after,.tip:focus::after{content:attr(data-tip);position:absolute;left:0;top:18px;z-index:30;width:230px;padding:8px 10px;border-radius:8px;background:var(--ink,#1d1d1b);color:var(--card,#fff);font:400 12px/1.4 system-ui,sans-serif;text-align:left;white-space:normal;box-shadow:0 4px 14px rgba(0,0,0,.25)}.mrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.mrow select{margin-left:4px;padding:4px 6px;border:1px solid var(--line,#e6e5df);border-radius:6px;background:var(--card,#fff);color:var(--ink,#1d1d1b);font:inherit}
+.fl{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}.fl[hidden]{display:none}.pay{color:#0b7a4b;font-weight:600}.wa{color:#c43a27;font-weight:600}.tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;margin-left:4px;border:1px solid var(--muted);border-radius:50%;font:600 10px/1 system-ui,sans-serif;font-style:normal;color:var(--muted);cursor:help;position:relative;vertical-align:middle}.tip:hover::after,.tip:focus::after{content:attr(data-tip);position:absolute;left:0;top:18px;z-index:30;width:230px;padding:8px 10px;border-radius:8px;background:var(--ink,#1d1d1b);color:var(--card,#fff);font:400 12px/1.4 system-ui,sans-serif;text-align:left;white-space:normal;box-shadow:0 4px 14px rgba(0,0,0,.25)}.mrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.mrow select{margin-left:4px;padding:4px 6px;border:1px solid var(--line,#e6e5df);border-radius:6px;background:var(--card,#fff);color:var(--ink,#1d1d1b);font:inherit}
 .fl select{width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);min-width:0}
 .fl .ms>button{width:100%;min-width:0;font-size:15px}
 .main{flex:999 1 560px;min-width:0}
@@ -149,6 +149,7 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
     <label class="fl" id="fsw"><span>State</span><select id="fs"><option value="">All states</option></select></label>
     <div class="fl"><span>Seniority</span><div class="ms" id="fsnw"><button type="button" id="fsnb"><span id="fsnl">All seniority</span><span>▾</span></button><input type="hidden" id="fl"><div class="pn"><input type="search" id="fsns" hidden><div class="ls" id="fsnls"></div><div class="ft"><a id="fsnclr">Clear</a><a id="fsndone">Done</a></div></div></div></div>
     <div class="fl"><span>Salary <i class="tip" tabindex="0" role="note" aria-label="Not all listings may have salary listed on the JD. We can only show this filter for roles, where the job poster has included the salary range" data-tip="Not all listings may have salary listed on the JD. We can only show this filter for roles, where the job poster has included the salary range">i</i></span><div class="ms" id="fpyw"><button type="button" id="fpyb"><span id="fpyl">Any salary</span><span>▾</span></button><input type="hidden" id="fpay"><div class="pn"><input type="search" id="fpys" hidden><div class="ls" id="fpyls"></div><div class="ft"><a id="fpyclr">Clear</a><a id="fpydone">Done</a></div></div></div></div>
+    <div class="fl"><span>Work Authorization</span><div class="ms" id="fwaw"><button type="button" id="fwab"><span id="fwal">Any authorization</span><span>▾</span></button><input type="hidden" id="fwav"><div class="pn"><input type="search" id="fwas" hidden><div class="ls" id="fwals"></div><div class="ft"><a id="fwaclr">Clear</a><a id="fwadone">Done</a></div></div></div></div>
     <label class="fl"><span>Work Mode</span><select id="fr"><option value="">Remote + onsite</option><option value="1">Remote only</option><option value="0">Onsite only</option></select></label>
   </aside>
   <main class="main">
@@ -197,8 +198,8 @@ const RG_LABEL = {all: "", us: "US", ca: "Canadian", uk: "UK", ie: "Irish", emea
 const BANDS = [["u100", "Under $100K"], ["100", "$100K–$150K"], ["150", "$150K–$200K"], ["200", "$200K–$450K"], ["450", "$450K and up"]];
 const BAND = j => { const k = (j.salary_min + (j.salary_max || j.salary_min)) / 2000; return k < 100 ? "u100" : k < 150 ? "100" : k < 200 ? "150" : k < 450 ? "200" : "450"; };
 const FIT = ["Director", "Executive", "Principal+"];
-const DEFAULTS = {country:"", company:[], state:"", dept:"", level:[], remote:"", q:"", role:[], domain:[], pay:[], sort:""};
-const F = {...DEFAULTS, company: [], role: [], level: [], domain: [], pay: []};
+const DEFAULTS = {country:"", company:[], state:"", dept:"", level:[], remote:"", q:"", role:[], domain:[], pay:[], wa:[], sort:""};
+const F = {...DEFAULTS, company: [], role: [], level: [], domain: [], pay: [], wa: []};
 let page = 0; const PER = 15;
 
 const ago = ts => {
@@ -221,6 +222,7 @@ function filtered(skip) {
     (!F.role.length || F.role.includes(j.role)) &&
     (skip === "domain" || !F.domain.length || F.domain.some(d => j.domains.includes(d))) &&
     (!F.pay.length || (j.salary_min && F.pay.includes(BAND(j)))) &&
+    (!F.wa.length || j.wa) &&
     (!F.company.length || F.company.includes(j.company)) &&
     (!F.state || j.states.includes(F.state)) &&
     (!F.country || j.ctry === F.country) &&
@@ -278,7 +280,7 @@ function render() {
   $("fdw").setEntries(dcount);
   const week = rows.filter(j => j.ts && NOW - j.ts <= 7 * DAY).length;
   // Sales, Support and Supply chain jobs load on demand; with no filters on, the total still counts them.
-  const unfilt = !(F.country || F.state || F.dept || F.remote || F.q || F.company.length || F.role.length || F.level.length || F.domain.length || F.pay.length) ? 1 : 0, deferred = Object.values(LAZYC).reduce((a, b) => a + b, 0);
+  const unfilt = !(F.country || F.state || F.dept || F.remote || F.q || F.company.length || F.role.length || F.level.length || F.domain.length || F.pay.length || F.wa.length) ? 1 : 0, deferred = Object.values(LAZYC).reduce((a, b) => a + b, 0);
   $("tiles").innerHTML = [
     [(rows.length + unfilt * deferred).toLocaleString(), ("open " + (RG_LABEL[window.__rg] || "") + " roles (matching)").replace("  ", " ")],
     [unfilt && DATA.companyCount ? DATA.companyCount : new Set(rows.map(j => j.company)).size, "companies"],
@@ -309,7 +311,7 @@ function render() {
     <a class="job" data-u="${esc(j.url)}" href="${esc(j.url)}" target="_blank" rel="noopener noreferrer">
       <span class="t">${esc(j.title)}${j.remote ? '<span class="tag">Remote</span>' : ""}${j.example ? '<span class="tag">Your example</span>' : ""}${FIT.includes(j.seniority) ? '<span class="tag">' + esc(j.seniority === "Principal+" ? "Staff / Principal / Group" : j.seniority) + '</span>' : ""}</span>
       <span class="r"><span>${j.tsKind ? j.tsKind + " " : ""}${ago(j.ts)}</span><span class="act" data-u="${esc(j.url)}"><button type="button" class="sv" data-a="sv" aria-label="Save job" title="Save job"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button><button type="button" class="ap" data-a="ap" role="checkbox" aria-checked="false"><span class="bx"></span>Applied</button></span></span>
-      <span class="c">${esc(j.company)} · ${esc(j.location || "Location n/a")} · ${esc(j.department)}${j.salary_min ? " · <b class=\"pay\">" + money(j.salary_min, j.salary_cur) + (j.salary_max && j.salary_max !== j.salary_min ? "–" + money(j.salary_max, j.salary_cur).replace(/^\D+/, "") : "") + "</b>" : ""}${j.src === "search" ? " · <i class=\"fs\">from search</i>" : ""}</span>
+      <span class="c">${esc(j.company)} · ${esc(j.location || "Location n/a")} · ${esc(j.department)}${j.wa ? " · <b class=\"wa\">US Citizen/GC only</b>" : ""}${j.salary_min ? " · <b class=\"pay\">" + money(j.salary_min, j.salary_cur) + (j.salary_max && j.salary_max !== j.salary_min ? "–" + money(j.salary_max, j.salary_cur).replace(/^\D+/, "") : "") + "</b>" : ""}${j.src === "search" ? " · <i class=\"fs\">from search</i>" : ""}</span>
     </a>`).join("") || '<div class="meta">No roles match these filters.</div>';
   if (window.__jfSync) window.__jfSync();
 }
@@ -337,9 +339,10 @@ function init() {
   const SORD = ["Intern", "Entry", "Mid", "Senior", "Manager", "Director", "Principal+", "Executive"], sc = new Map(count(jobs, j => j.seniority)); msMake("fsn", "fl", "level", "All seniority", "levels", [...SORD, ...[...sc.keys()].filter(k => !SORD.includes(k))].filter(k => sc.get(k)).map(k => [k, sc.get(k)]), {}, false);
   fillSelect("fs", count(jobs, j => j.states));
   const bind = (id, key, ev = "change") => $(id).addEventListener(ev, e => { F[key] = e.target.value; page = 0; sync(); render(); });
+  msMake("fwa", "fwav", "wa", "Any authorization", "options", [["wa", jobs.filter(j => j.wa).length]], { wa: "US Citizen/GC only" }, false); window.__waSet = () => $("fwaw").setEntries([["wa", jobs.filter(j => j.wa).length]]);
   $("fpay").addEventListener("change", () => { if (!F.pay.length) { F.sort = ""; $("fsort").value = ""; } }); $("fsort").addEventListener("change", e => { F.sort = e.target.value; page = 0; render(); });
   bind("fs", "state"); bind("fr", "remote"); bind("q", "q", "input");
-  $("reset").onclick = () => { Object.assign(F, DEFAULTS, { company: [], role: [], level: [], domain: [], pay: [] }); $("q").value = ""; page = 0; sync(); render(); };
+  $("reset").onclick = () => { Object.assign(F, DEFAULTS, { company: [], role: [], level: [], domain: [], pay: [], wa: [] }); $("q").value = ""; page = 0; sync(); render(); };
   const pgClick = e => { const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return; page += +b.dataset.pg; render(); (e.currentTarget.id === "pgBot" ? $("count") : $("pgTop")).scrollIntoView({ block: "start" }); };
   $("pgTop").onclick = pgClick; $("pgBot").onclick = pgClick;
   $("charts").addEventListener("click", e => {
@@ -456,9 +459,7 @@ o.addEventListener("click",function(e){if(e.target===o)close()});
 o.querySelector(".x").focus()}
 function nudge(){try{if(sessionStorage.getItem("jf_nudge"))return}catch(e){}
 setTimeout(function(){if(document.getElementById("jfNudge"))return;try{sessionStorage.setItem("jf_nudge","1")}catch(e){}openGate("<b>Create a free account</b> to save jobs, track applications and use advanced filters.",false)},Math.max(0,10000-(Date.now()-T0)))}
-function lockFilters(){if(!document.getElementById("jfLkCss")){var ls=document.createElement("style");ls.id="jfLkCss";ls.textContent=".lk{position:relative}.lk .lkb{border-radius:8px}.lk .lkb{position:absolute;inset:0;width:100%;border:0;background:transparent;cursor:pointer;z-index:2}";document.head.appendChild(ls)}var f=document.getElementById("fpyw");if(!f||f.classList.contains("lk"))return;f.classList.add("lk");
-var b=document.createElement("button");b.type="button";b.className="lkb";b.setAttribute("aria-label","Salary filter. Log in or create an account to use advanced filters");
-b.onclick=function(){openGate("<b>Create a free account or log in</b> to access advanced filters.",true)};f.appendChild(b)}
+function lockFilters(){if(!document.getElementById("jfLkCss")){var ls=document.createElement("style");ls.id="jfLkCss";ls.textContent=".lk{position:relative}.lk .lkb{border-radius:8px}.lk .lkb{position:absolute;inset:0;width:100%;border:0;background:transparent;cursor:pointer;z-index:2}";document.head.appendChild(ls)}["fpyw","fwaw"].forEach(function(id){var f=document.getElementById(id);if(!f||f.classList.contains("lk"))return;f.classList.add("lk");var b=document.createElement("button");b.type="button";b.className="lkb";b.setAttribute("aria-label",(id==="fwaw"?"Work authorization":"Salary")+" filter. Log in or create an account to use advanced filters");b.onclick=function(){openGate("<b>Create a free account or log in</b> to access advanced filters.",true)};f.appendChild(b)})}
 var ME=null,SV={},AP={};
 function sync(){var els=document.querySelectorAll(".job[data-u]");for(var i=0;i<els.length;i++){var u=els[i].getAttribute("data-u"),sv=!!SV[u],ap=!!AP[u],b=els[i].querySelector(".sv"),c=els[i].querySelector(".ap");
 if(b){b.classList.toggle("on",sv);b.setAttribute("aria-label",sv?"Saved. Click to remove":"Save job");b.title=sv?"Saved. Click to remove":"Save job"}
