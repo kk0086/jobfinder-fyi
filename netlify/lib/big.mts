@@ -29,7 +29,7 @@ type Reader = { name: string; run: () => Promise<{ raw: RawJob[]; assumeUS?: boo
 function workday(name: string, host: string, tenant: string, site: string, cap = 2000): Reader {
   const api = `https://${host}/wday/cxs/${tenant}/${site}/jobs`;
   const base = `https://${host}/en-US/${site}`;
-  const post = (body: object) => jget(api, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const post = (body: object) => jget(api, { method: "POST", headers: { "content-type": "application/json", accept: "application/json", "accept-language": "en-US", "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36" }, body: JSON.stringify(body) });
   return { name, run: async () => {
     const first = await post({ appliedFacets: {}, limit: 20, offset: 0, searchText: "" });
     // Find the "United States" country facet so only US roles are paged.
