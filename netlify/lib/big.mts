@@ -317,7 +317,7 @@ function jibe(name: string, origin: string, all = false): Reader {
 }
 
 // Avature career sites (Deloitte): the search page lists 100 jobs per page as HTML articles (link, title, location in the last subtitle span).
-function avature(name: string, origin: string, cap = 3000, assumeUS = true, path = "SearchJobs"): Reader {
+function avature(name: string, origin: string, cap = 3000, assumeUS = true, path = "SearchJobs", step = 100): Reader {
   let bad = 0;
   const page = async (o: number): Promise<RawJob[]> => {
     const r = await fetch(`${origin}/${path}/?jobRecordsPerPage=100&jobOffset=${o}&folderRecordsPerPage=100&folderOffset=${o}`, { headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html" }, signal: AbortSignal.timeout(20000) });
@@ -327,7 +327,8 @@ function avature(name: string, origin: string, cap = 3000, assumeUS = true, path
     const viaArticles = html.split("<article").slice(1).flatMap(a => {
       const m = /href="(https?:[^"]*\/(?:JobDetail|FolderDetail)\/[^"]+)"[^>]*>\s*([^<]+?)\s*<\/a>/.exec(a); if (!m) return [];
       const spans = [...a.matchAll(/<span[^>]*>\s*([^<]*?)\s*<\/span>/g)].map(x => dec(x[1])).filter(Boolean);
-      return [{ company: name, title: dec(m[2]), location: (spans[spans.length - 1] || "").replace(/,\s*United States$/, ""), department: "", url: m[1] } as RawJob];
+      const ll = /class="list-item-location">\s*([^<]*?)\s*<\/span>/.exec(a)?.[1]; // explicit location span (EA)
+      return [{ company: name, title: dec(m[2]), location: (ll ? dec(ll) : spans[spans.length - 1] || "").replace(/,\s*United States$/, ""), department: "", url: m[1] } as RawJob];
     });
     if (viaArticles.length) return viaArticles;
     // Alternate Avature layout (Delta): <li class="list__item"> with the location as "Country, State, City" in the first subtitle span.
@@ -340,7 +341,7 @@ function avature(name: string, origin: string, cap = 3000, assumeUS = true, path
     });
   };
   return { name, run: async () => {
-    const pages = await pool(range(0, cap, 100), 6, page);
+    const pages = await pool(range(0, cap, step), 6, page);
     const raw = pages.flat().filter(Boolean) as RawJob[];
     if (!raw.length) throw new Error(bad ? `HTTP ${bad}` : "no jobs read");
     return { raw, assumeUS };
@@ -679,7 +680,7 @@ export function fromSpec(s: Spec): Reader {
     case "smartrecruiters": return smartrecruiters(s.name, s.id);
     case "builtin": { const b = BIG.find(x => x.name === s.name); if (!b) throw new Error("not found"); return b; }
     case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
-    case "avature": return avature(s.name, s.origin, s.cap || 3000, s.assumeUS !== false, (s as any).path || "SearchJobs");
+    case "avature": return avature(s.name, s.origin, s.cap || 3000, s.assumeUS !== false, (s as any).path || "SearchJobs", (s as any).step || 100);
     case "workable": return workable(s.name, s.slug, !!s.assumeUS);
     case "taleo": return taleo(s.name, s.host, s.org, String(s.cws));
     case "vaia": return vaia(s.name, s.page);
@@ -796,6 +797,7 @@ export const BIG: Reader[] = [
   workday("Nordstrom", "nordstrom.wd501.myworkdayjobs.com", "nordstrom", "nordstrom_careers"),  workday("Unity", "unitytech.wd1.myworkdayjobs.com", "unitytech", "Unity"),
   workday("Wells Fargo", "wf.wd1.myworkdayjobs.com", "wf", "WellsFargoJobs"),
   successfactors("EY", "https://careers.ey.com", "/ey"),
+  avature("Electronic Arts", "https://jobs.ea.com/en_US/careers", 1200, false, "SearchJobs", 20),
 ];
 
 export async function crawlBig(i: number) {
