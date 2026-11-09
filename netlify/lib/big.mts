@@ -301,9 +301,10 @@ function jibe(name: string, origin: string, all = false): Reader {
 
 // Avature career sites (Deloitte): the search page lists 100 jobs per page as HTML articles (link, title, location in the last subtitle span).
 function avature(name: string, origin: string, cap = 3000, assumeUS = true, path = "SearchJobs"): Reader {
+  let bad = 0;
   const page = async (o: number): Promise<RawJob[]> => {
     const r = await fetch(`${origin}/${path}/?jobRecordsPerPage=100&jobOffset=${o}&folderRecordsPerPage=100&folderOffset=${o}`, { headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html" }, signal: AbortSignal.timeout(20000) });
-    if (!r.ok) return [];
+    if (!r.ok) { bad = r.status; return []; }
     const html = await r.text();
     const dec = (x: string) => x.replace(/&amp;/g, "&").replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
     const viaArticles = html.split("<article").slice(1).flatMap(a => {
@@ -324,7 +325,7 @@ function avature(name: string, origin: string, cap = 3000, assumeUS = true, path
   return { name, run: async () => {
     const pages = await pool(range(0, cap, 100), 6, page);
     const raw = pages.flat().filter(Boolean) as RawJob[];
-    if (!raw.length) throw new Error("no jobs read");
+    if (!raw.length) throw new Error(bad ? `HTTP ${bad}` : "no jobs read");
     return { raw, assumeUS };
   } };
 }
