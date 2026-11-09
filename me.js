@@ -13,7 +13,7 @@ if(page==="account"){
     $("jt").value=u.jobTitle;$("cc").value=u.currentCompany;$("pc").value=u.previousCompany;$("sal").value=u.salaryMin;$("wa").value=u.workAuth;$("form").hidden=false});
   $("form").onsubmit=function(e){e.preventDefault();$("err").textContent="";$("okm").textContent="";var b=$("go");b.disabled=true;
     api("profile",{jobTitle:$("jt").value,currentCompany:$("cc").value,previousCompany:$("pc").value,salaryMin:$("sal").value,workAuth:$("wa").value}).then(function(r){b.disabled=false;if(!gate(r))return;
-      if(!r.ok)return $("err").textContent=r.d.error||"Something went wrong. Please try again.";$("okm").textContent="Saved."}).catch(function(){b.disabled=false;$("err").textContent="Something went wrong. Please try again."})};
+      if(!r.ok)return $("err").textContent=r.d.error||"Something went wrong. Please try again.";$("okm").textContent="Saved. Taking you to the homepage…";b.disabled=true;setTimeout(function(){location.href="/"},900)}).catch(function(){b.disabled=false;$("err").textContent="Something went wrong. Please try again."})};
 }
 
 if(page==="saved"||page==="applied"){
