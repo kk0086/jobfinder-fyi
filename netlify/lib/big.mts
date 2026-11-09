@@ -125,6 +125,11 @@ function radancy(name: string, origin: string, prefix: string, org: string): Rea
       const a = /<a [^>]*href="([^"]*\/job\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/.exec(c); const l = /sr-job-location"[^>]*>([\s\S]*?)<\/span>/.exec(c);
       if (a) out.push({ company: name, title: dec(a[2]), location: l ? dec(l[1]) : "", department: "", url: origin + a[1], posted: null });
     }
+    if (!out.length) for (const c of html.split('class="search-results__job-link"').slice(1)) { // TalentBrew layout with separate title/location/date spans (Boeing)
+      const a = /href="([^"]*\/job\/[^"]+)"[^>]*>\s*<span class="search-results__job-title">([\s\S]*?)<\/span>/.exec(c); if (!a) continue;
+      const l = /job-info location">([\s\S]*?)<\/span>/.exec(c); const d = /job-info date">\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(c);
+      out.push({ company: name, title: dec(a[2]), location: l ? dec(l[1]) : "", department: "", url: origin + a[1], posted: d ? `${d[3]}-${d[1].padStart(2, "0")}-${d[2].padStart(2, "0")}` : null });
+    }
     return out;
   };
   const page = async (p: number) => { const j = await jget(url(p)); return { html: String(j?.results || ""), }; };
@@ -301,10 +306,19 @@ function avature(name: string, origin: string, cap = 3000, assumeUS = true, path
     if (!r.ok) return [];
     const html = await r.text();
     const dec = (x: string) => x.replace(/&amp;/g, "&").replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
-    return html.split("<article").slice(1).flatMap(a => {
+    const viaArticles = html.split("<article").slice(1).flatMap(a => {
       const m = /href="(https?:[^"]*\/(?:JobDetail|FolderDetail)\/[^"]+)"[^>]*>\s*([^<]+?)\s*<\/a>/.exec(a); if (!m) return [];
       const spans = [...a.matchAll(/<span[^>]*>\s*([^<]*?)\s*<\/span>/g)].map(x => dec(x[1])).filter(Boolean);
       return [{ company: name, title: dec(m[2]), location: (spans[spans.length - 1] || "").replace(/,\s*United States$/, ""), department: "", url: m[1] } as RawJob];
+    });
+    if (viaArticles.length) return viaArticles;
+    // Alternate Avature layout (Delta): <li class="list__item"> with the location as "Country, State, City" in the first subtitle span.
+    return html.split('<li class="list__item">').slice(1).flatMap(c => {
+      const m = /href="(https?:[^"]*\/JobDetail\/[^"]+)"[^>]*>\s*([^<]+?)\s*<\/a>/.exec(c); if (!m) return [];
+      const sp = /list__item__text__subtitle">\s*<span[^>]*>\s*([^<]*?)\s*<\/span>/.exec(c);
+      const parts = dec(sp ? sp[1] : "").replace(/\.$/, "").split(/,\s*/).filter(Boolean);
+      const loc = parts[0] === "United States" ? parts.slice(1).reverse().join(", ") : parts.reverse().join(", ");
+      return [{ company: name, title: dec(m[2]), location: loc, department: "", url: m[1].replace(/&amp;/g, "&") } as RawJob];
     });
   };
   return { name, run: async () => {
@@ -345,6 +359,28 @@ function wayfair(name: string): Reader {
       url: `https://www.wayfair.com/careers/job/${slugOf(x.title)}/2-${x.id}`, posted: x.created ? String(x.created).slice(0, 10) : null,
       ...(payFromText(String(x.desc || "")) || {}) } as RawJob));
     return { raw, assumeUS: false };
+  } };
+}
+
+// iCIMS career portals (Alaska Airlines): /jobs/search?ss=1&in_iframe=1&pr=N lists 50 roles per page as HTML rows.
+function icims(name: string, hosts: string[]): Reader {
+  const dec = (x: string) => x.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
+  const loc = (x: string) => { const p = x.split("-").map(v => v.trim()).filter(Boolean); return /^(US|USA)$/i.test(p[0] || "") && p.length >= 3 ? `${p.slice(2).join(" ")}, ${p[1]}` : p.length >= 3 ? p.slice(2).join(" ") + ", " + p[1] + ", " + p[0] : x; };
+  return { name, run: async () => {
+    const raw: RawJob[] = []; let okPages = 0;
+    for (const h of hosts) for (let pr = 0; pr < 30; pr++) {
+      const r = await fetch(`https://${h}/jobs/search?ss=1&in_iframe=1&pr=${pr}`, { headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36" }, signal: AbortSignal.timeout(12000) });
+      if (!r.ok) break; okPages++;
+      const rows = (await r.text()).split('class="row"').slice(1); let n = 0;
+      for (const c of rows) {
+        const a = /href="([^"]*\/jobs\/\d+\/[^"]*\/job)[^"]*"[^>]*>[\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>/.exec(c); if (!a) continue; n++;
+        const l = /Job Locations<\/span>\s*<span[^>]*>([\s\S]*?)<\/span>/.exec(c); const d = /class="col-xs-12 description">([\s\S]*?)<\/div>/.exec(c);
+        raw.push({ company: name, title: dec(a[2]), location: l ? loc(dec(l[1])) : "", department: "", url: a[1], posted: null, ...(d ? payFromText(dec(d[1])) || {} : {}) } as RawJob);
+      }
+      if (!n) break;
+    }
+    if (!okPages || !raw.length) throw new Error("no jobs read");
+    return { raw };
   } };
 }
 
@@ -613,7 +649,7 @@ const SHOPIFY: Reader = { name: "Shopify", run: async () => {
   return { raw: out };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "walmart" | "bytedance" | "avature" | "workable" | "wayfair"; name: string; [k: string]: any };
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "walmart" | "bytedance" | "avature" | "workable" | "wayfair" | "icims"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -630,6 +666,7 @@ export function fromSpec(s: Spec): Reader {
     case "taleo": return taleo(s.name, s.host, s.org, String(s.cws));
     case "vaia": return vaia(s.name, s.page);
     case "wayfair": return wayfair(s.name);
+    case "icims": return icims(s.name, s.hosts);
     case "bytedance": return bytedance(s.name, s.origin);
     case "walmart": return walmart(s.name, (s as any).queries || WM_Q1);
     case "phenom": return phenom(s.name, s.origin, s.locale || "us/en");
@@ -733,6 +770,10 @@ export const BIG: Reader[] = [
   wayfair("Wayfair"),
   oracle("Marriott", "ejwl.fa.us2.oraclecloud.com", "MI_CS_1", 5000),
   workday("Yahoo", "ouryahoo.wd5.myworkdayjobs.com", "ouryahoo", "careers"),
+  radancy("Boeing", "https://jobs.boeing.com", "", "185"),
+  jibe("PepsiCo", "https://pepsico.jibeapply.com"),
+  avature("Delta Air Lines", "https://delta.avature.net/en_US/careers", 1000, false),
+  icims("Alaska Airlines", ["corporatejobs-alaskaair.icims.com", "maintenancejobs-alaskaair.icims.com"]),
 ];
 
 export async function crawlBig(i: number) {
