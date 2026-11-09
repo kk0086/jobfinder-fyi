@@ -774,7 +774,9 @@ export const BIG: Reader[] = [
   radancy("Boeing", "https://jobs.boeing.com", "", "185"),
   jibe("PepsiCo", "https://pepsico.jibeapply.com"),
   avature("Delta Air Lines", "https://delta.avature.net/en_US/careers", 1000, false),
-  icims("Alaska Airlines", ["corporatejobs-alaskaair.icims.com", "maintenancejobs-alaskaair.icims.com"]),
+  icims("Alaska Airlines", ["corporatejobs-alaskaair.icims.com", "maintenancejobs-alaskaair.icims.com"]),  phenom("Boston Consulting Group", "https://careers.bcg.com", "global/en"),
+  oracle("Macy's", "ebwh.fa.us2.oraclecloud.com", "CX_1001", 5000),
+  workday("Nordstrom", "nordstrom.wd501.myworkdayjobs.com", "nordstrom", "nordstrom_careers"),
 ];
 
 export async function crawlBig(i: number) {
