@@ -160,6 +160,8 @@ export function waFromText(text: string): boolean {
     new RegExp("(?:only|limited to|restricted to|open to)\\s+(?:u\\.?s\\.?\\s+)?citizens?[^.]{0,40}" + gc, "i"),
     new RegExp("(?:must|required to)\\s+be\\s+(?:a\\s+)?(?:u\\.?s\\.?\\s+)?(?:citizen|national)[^.]{0,30}" + gc, "i"),
     new RegExp(cit + "\\s+(?:is|are)\\s+required", "i"),
+    new RegExp("(?:must|required to|need to|have to)\\s+(?:be|hold|have)\\s+(?:a\\s+|an\\s+)?(?:current\\s+|valid\\s+)?(?:u\\.?s\\.?\\s+|lawful\\s+)?(?:" + gc + ")", "i"),
+    new RegExp(gc + "\\s+(?:holders?\\s+)?(?:status\\s+)?(?:is\\s+|are\\s+)?(?:required|only)", "i"),
     new RegExp("(?:requires?|require)\\s+(?:u\\.?s\\.?|united states)\\s+citizenship", "i"),
     new RegExp("(?:u\\.?s\\.?|united states)\\s+citizenship\\s+(?:is\\s+)?(?:required|mandatory)", "i"),
   ];
