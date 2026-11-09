@@ -278,6 +278,23 @@ function oracle(name: string, host: string, site: string, cap = 3000): Reader {
 }
 
 // Jibe-powered career sites (AMD, Costco, ...): /api/jobs, 100 per page.
+// SAP SuccessFactors career sites (EY and others): server-rendered search pages, 25 rows each, filtered by country code.
+function successfactors(name: string, origin: string, path: string, country = "US"): Reader {
+  return { name, run: async () => {
+    const dec = (t: string) => t.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;|&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+    const page = async (n: number) => (await fetch(`${origin}${path}/search/?q=&locationsearch=&optionsFacetsDD_country=${country}&startrow=${n}`, { headers: { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36", accept: "text/html" }, signal: AbortSignal.timeout(15000) }).then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); }));
+    const rows = (html: string): RawJob[] => html.split('<tr class="data-row"').slice(1).map(c => {
+      const a = /<a href="([^"]+)" class="jobTitle-link">([\s\S]*?)<\/a>/.exec(c); const l = /class="jobLocation">([\s\S]*?)(?:<small|<\/span>)/.exec(c);
+      return a ? { company: name, title: dec(a[2]), location: l ? dec(l[1]).replace(/,\s*US,?\s*\d*$/, ", US").replace(/,\s*([A-Z]{2}),\s*US$/, ", $1") : "", department: "", url: origin + a[1], posted: null } as RawJob : null;
+    }).filter(Boolean) as RawJob[];
+    const first = await page(0); const tot = Number(/of\s*<b>([\d,]+)/.exec(first)?.[1]?.replace(/,/g, "") || 0);
+    const out = new Map<string, RawJob>(); for (const r of rows(first)) out.set(r.url, r);
+    const offs: number[] = []; for (let o = 25; o < Math.min(tot, 5000); o += 25) offs.push(o);
+    await pool(offs, 8, async o => { for (const r of rows(await page(o))) out.set(r.url, r); });
+    return { raw: [...out.values()] };
+  } };
+}
+
 function jibePay(d: any) {
   const p = d.salary_min_value > 0 ? annualPay(d.salary_min_value, d.salary_max_value || d.salary_min_value, String(d.salary_value_type || d.salary_period || "year")) : null;
   if (p) return { salary_min: p.min, salary_max: p.max, salary_cur: String(d.salary_currency || "USD") };
@@ -777,6 +794,8 @@ export const BIG: Reader[] = [
   icims("Alaska Airlines", ["corporatejobs-alaskaair.icims.com", "maintenancejobs-alaskaair.icims.com"]),  phenom("Boston Consulting Group", "https://careers.bcg.com", "global/en"),
   oracle("Macy's", "ebwh.fa.us2.oraclecloud.com", "CX_1001", 5000),
   workday("Nordstrom", "nordstrom.wd501.myworkdayjobs.com", "nordstrom", "nordstrom_careers"),  workday("Unity", "unitytech.wd1.myworkdayjobs.com", "unitytech", "Unity"),
+  workday("Wells Fargo", "wf.wd1.myworkdayjobs.com", "wf", "WellsFargoJobs"),
+  successfactors("EY", "https://careers.ey.com", "/ey"),
 ];
 
 export async function crawlBig(i: number) {
