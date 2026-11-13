@@ -35,8 +35,10 @@ hr.sep{border:0;height:1px;background:var(--line);margin:16px 0}.ok{color:#16794
 .empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
 @media (max-width:600px){.ji{flex-wrap:wrap}.ji .m{flex-basis:100%}}
 .w.xl{max-width:1180px}
-.ji.tb{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,2fr) 96px repeat(4,84px);gap:10px;align-items:center}
+.ji.tb{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,2fr) 96px repeat(5,84px);gap:10px;align-items:center}
 .ji.hd{border:0;background:transparent;padding:0 16px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;align-items:end}.ji.hd span:nth-child(n+4){text-align:center}
 .c3{display:flex;justify-content:center}.ji.tb .ap{width:34px;padding:0;justify-content:center}.ji.tb .ap em{display:none}
 @media (max-width:900px){.ji.hd{display:none}.ji.tb{display:flex;flex-wrap:wrap}.ji.tb .m{flex-basis:100%}.ji.tb .c3{justify-content:flex-start}.ji.tb .ap{width:auto;padding:0 10px}.ji.tb .ap em{display:inline;font-style:normal}}
 .note{margin:0 0 14px;font-size:14px;line-height:1.5;color:var(--ink)}
+
+.ji.rj{opacity:.7}.ji.rj .m a{text-decoration:line-through}.rjh{font-size:15px;margin:22px 0 8px;color:var(--muted);font-weight:700}

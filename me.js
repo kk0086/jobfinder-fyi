@@ -25,10 +25,14 @@ if(page==="saved"||page==="applied"){
     if(!list.length){$("list").innerHTML='<div class="empty">'+(page==="saved"?"No saved jobs yet. Tap the bookmark icon on any job to save it.":"No applications yet. Tick Applied on any job to track it here.")+'</div>';return}
     if(page==="applied"){
       var cb=function(j,f,lab){return '<span class="c3"><button type="button" class="ap'+(j[f]?" on":"")+'" data-a="flag" data-f="'+f+'" role="checkbox" aria-checked="'+!!j[f]+'" aria-label="'+lab+'"><span class="bx"></span><em>'+lab+'</em></button></span>'};
-      $("list").innerHTML='<div class="ji hd tb"><span>Role</span><span>Company &middot; Location</span><span>Applied on</span><span>Applied</span><span>Interview scheduled</span><span>Got an offer</span><span>Accepted offer</span></div>'+list.map(function(j){
-        return '<div class="ji tb" data-u="'+esc(j.url)+'"><div class="m"><a href="'+esc(j.url)+'" target="_blank" rel="noopener noreferrer">'+esc(j.title||"Job")+'</a></div><div class="m"><div>'+esc(j.company)+(j.location?" &middot; "+esc(j.location):"")+'</div></div><span class="d">'+fmt(j.at)+'</span>'
+      var rowH=function(j){
+        return '<div class="ji tb'+(j.rejected?" rj":"")+'" data-u="'+esc(j.url)+'"><div class="m"><a href="'+esc(j.url)+'" target="_blank" rel="noopener noreferrer">'+esc(j.title||"Job")+'</a></div><div class="m"><div>'+esc(j.company)+(j.location?" &middot; "+esc(j.location):"")+'</div></div><span class="d">'+fmt(j.at)+'</span>'
         +'<span class="c3"><button type="button" class="ap on" data-a="unapply" role="checkbox" aria-checked="true" aria-label="Applied"><span class="bx"></span><em>Applied</em></button></span>'
-        +cb(j,"interview","Interview scheduled")+cb(j,"offer","Got an offer")+cb(j,"accepted","Accepted offer")+'</div>'}).join("");return}
+        +cb(j,"interview","Interview scheduled")+cb(j,"offer","Got an offer")+cb(j,"accepted","Accepted offer")+cb(j,"rejected","Rejected")+'</div>'};
+      var act=list.filter(function(j){return !j.rejected}),rej=list.filter(function(j){return j.rejected});
+      $("cnt").textContent=list.length+" applied"+(rej.length?" \u00b7 "+rej.length+" rejected":"");
+      $("list").innerHTML='<div class="ji hd tb"><span>Role</span><span>Company &middot; Location</span><span>Applied on</span><span>Applied</span><span>Interview scheduled</span><span>Got an offer</span><span>Accepted offer</span><span>Rejected</span></div>'+act.map(rowH).join("")
+        +(rej.length?'<h2 class="rjh">Rejected ('+rej.length+')</h2>'+rej.map(rowH).join(""):"");return}
     $("list").innerHTML=list.map(function(j){var ap=has(L.applied,j.url);
       return '<div class="ji" data-u="'+esc(j.url)+'"><div class="m"><a href="'+esc(j.url)+'" target="_blank" rel="noopener noreferrer">'+esc(j.title||"Job")+'</a><div>'+esc(j.company)+(j.location?" · "+esc(j.location):"")+(j.department?" · "+esc(j.department):"")+'</div></div>'
       +'<span class="d">'+(page==="saved"?"Saved ":"Applied ")+fmt(j.at)+'</span>'

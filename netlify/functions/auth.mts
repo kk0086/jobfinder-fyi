@@ -130,7 +130,7 @@ export default async (req: Request, context: Context) => {
     else if (op === "apply" && !has(jl.applied)) { if (jl.applied.length >= MAXJ) return json({ error: "You've reached the limit of 500 applied jobs." }, 400); jl.applied.unshift(rec); }
     else if (op === "unapply") jl.applied = drop(jl.applied);
     else if (op === "flag") {
-      const FL = ["interview", "offer", "accepted"], f = String(q.flag), item = jl.applied.find((x: any) => x.url === url);
+      const FL = ["interview", "offer", "accepted", "rejected"], f = String(q.flag), item = jl.applied.find((x: any) => x.url === url);
       if (!FL.includes(f) || !item) return json({ error: "Bad request" }, 400);
       item[f] = !!q.value;
       if (f === "accepted" && item.accepted) item.offer = true; // accepting implies an offer
