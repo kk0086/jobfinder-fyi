@@ -295,6 +295,20 @@ function successfactors(name: string, origin: string, path: string, country = "U
   } };
 }
 
+// Ashby boards whose public posting API is switched off (e.g. Whatnot): read the same GraphQL endpoint the hosted board page uses.
+function ashbyGql(name: string, slug: string): Reader {
+  return { name, run: async () => {
+    const q = { operationName: "ApiJobBoardWithTeams", variables: { organizationHostedJobsPageName: slug }, query: "query ApiJobBoardWithTeams($organizationHostedJobsPageName: String!) { jobBoard: jobBoardWithTeams(organizationHostedJobsPageName: $organizationHostedJobsPageName) { teams { id name } jobPostings { id title locationName teamId workplaceType } } }" };
+    const r = await fetch("https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams", { method: "POST", headers: { "content-type": "application/json", "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36" }, body: JSON.stringify(q), signal: AbortSignal.timeout(20000) });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const b = (await r.json())?.data?.jobBoard; if (!b) throw new Error("no board");
+    const team = new Map<string, string>((b.teams || []).map((t: any) => [t.id, t.name]));
+    const raw = (b.jobPostings || []).map((p: any) => ({ company: name, title: p.title, location: p.locationName || "", department: team.get(p.teamId) || "", url: `https://jobs.ashbyhq.com/${slug}/${p.id}`, posted: null, remote: /remote/i.test(String(p.workplaceType || "")) ? true : null } as RawJob));
+    if (!raw.length) throw new Error("no jobs read");
+    return { raw };
+  } };
+}
+
 function jibePay(d: any) {
   const p = d.salary_min_value > 0 ? annualPay(d.salary_min_value, d.salary_max_value || d.salary_min_value, String(d.salary_value_type || d.salary_period || "year")) : null;
   if (p) return { salary_min: p.min, salary_max: p.max, salary_cur: String(d.salary_currency || "USD") };
@@ -668,7 +682,7 @@ const SHOPIFY: Reader = { name: "Shopify", run: async () => {
   return { raw: out };
 } };
 
-export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "walmart" | "bytedance" | "avature" | "workable" | "wayfair" | "icims"; name: string; [k: string]: any };
+export type Spec = { kind: "workday" | "oracle" | "radancy" | "eightfold" | "jibe" | "phenom" | "sitemap" | "builtin" | "smartrecruiters" | "clinch" | "taleo" | "vaia" | "walmart" | "bytedance" | "avature" | "workable" | "wayfair" | "icims" | "ashbygql"; name: string; [k: string]: any };
 export function fromSpec(s: Spec): Reader {
   switch (s.kind) {
     case "workday": return workday(s.name, s.host, s.tenant, s.site, s.cap || 2000);
@@ -680,6 +694,7 @@ export function fromSpec(s: Spec): Reader {
     case "smartrecruiters": return smartrecruiters(s.name, s.id);
     case "builtin": { const b = BIG.find(x => x.name === s.name); if (!b) throw new Error("not found"); return b; }
     case "sitemap": return sitemapJobs(s.name, s.sitemap, new RegExp(s.pattern), s.part || 0, s.parts || 1, !!s.assumeUS);
+    case "ashbygql": return ashbyGql(s.name, (s as any).slug);
     case "avature": return avature(s.name, s.origin, s.cap || 3000, s.assumeUS !== false, (s as any).path || "SearchJobs", (s as any).step || 100);
     case "workable": return workable(s.name, s.slug, !!s.assumeUS);
     case "taleo": return taleo(s.name, s.host, s.org, String(s.cws));
@@ -797,6 +812,7 @@ export const BIG: Reader[] = [
   workday("Nordstrom", "nordstrom.wd501.myworkdayjobs.com", "nordstrom", "nordstrom_careers"),  workday("Unity", "unitytech.wd1.myworkdayjobs.com", "unitytech", "Unity"),
   workday("Wells Fargo", "wf.wd1.myworkdayjobs.com", "wf", "WellsFargoJobs"),
   successfactors("EY", "https://careers.ey.com", "/ey"),
+  ashbyGql("Whatnot", "whatnot"),
   avature("Electronic Arts", "https://jobs.ea.com/en_US/careers", 1200, false, "SearchJobs", 20),
 ];
 
