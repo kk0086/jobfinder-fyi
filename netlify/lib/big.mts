@@ -813,7 +813,7 @@ export const BIG: Reader[] = [
   workday("Wells Fargo", "wf.wd1.myworkdayjobs.com", "wf", "WellsFargoJobs"),
   successfactors("EY", "https://careers.ey.com", "/ey"),
   ashbyGql("Whatnot", "whatnot"),
-  avature("Electronic Arts", "https://jobs.ea.com/en_US/careers", 1200, false, "SearchJobs", 20),
+  avature("Electronic Arts", "https://jobs.ea.com/en_US/careers", 1200, false, "SearchJobs", 20),  radancy("The Walt Disney Company", "https://www.disneycareers.com", "/en", "391"),
 ];
 
 export async function crawlBig(i: number) {
