@@ -151,12 +151,13 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
     <div class="fl"><span>Salary <i class="tip" tabindex="0" role="note" aria-label="Not all listings may have salary listed on the JD. We can only show this filter for roles, where the job poster has included the salary range" data-tip="Not all listings may have salary listed on the JD. We can only show this filter for roles, where the job poster has included the salary range">i</i></span><div class="ms" id="fpyw"><button type="button" id="fpyb"><span id="fpyl">Any salary</span><span>▾</span></button><input type="hidden" id="fpay"><div class="pn"><input type="search" id="fpys" hidden><div class="ls" id="fpyls"></div><div class="ft"><a id="fpyclr">Clear</a><a id="fpydone">Done</a></div></div></div></div>
     <div class="fl"><span>Work Authorization (for US only)</span><div class="ms" id="fwaw"><button type="button" id="fwab"><span id="fwal">Any authorization</span><span>▾</span></button><input type="hidden" id="fwav"><div class="pn"><input type="search" id="fwas" hidden><div class="ls" id="fwals"></div><div class="ft"><a id="fwaclr">Clear</a><a id="fwadone">Done</a></div></div></div></div>
     <label class="fl"><span>Work Mode</span><select id="fr"><option value="">Remote + onsite</option><option value="1">Remote only</option><option value="0">Onsite only</option></select></label>
+    <label class="fl"><span>Date Posted</span><select id="fdt"><option value="">Anytime</option><option value="1">Last 24 hours</option><option value="3">Last 3 days</option><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="30">Last month</option></select></label>
   </aside>
   <main class="main">
   <div class="sub" id="asof"></div>
   <div class="tiles" id="tiles"></div>
   <div class="charts" id="charts"></div>
-  <div class="meta mrow"><span id="count"></span><label id="sortw" hidden>Sort by <select id="fsort"><option value="">Newest, senior first</option><option value="hi">Salary: high to low</option><option value="lo">Salary: low to high</option></select></label></div>
+  <div class="meta mrow"><span id="count"></span><label id="sortw" hidden>Sort by <select id="fsort"><option value="">Newest first</option><option value="hi">Salary: high to low</option><option value="lo">Salary: low to high</option></select></label></div>
   <div class="pager" id="pgTop"></div>
   <div class="list" id="list"></div>
   <div class="pager" id="pgBot"></div>
@@ -198,7 +199,7 @@ const RG_LABEL = {all: "", us: "US", ca: "Canadian", uk: "UK", ie: "Irish", emea
 const BANDS = [["u100", "Under $100K"], ["100", "$100K–$150K"], ["150", "$150K–$200K"], ["200", "$200K–$450K"], ["450", "$450K and up"]];
 const BAND = j => { const k = (j.salary_min + (j.salary_max || j.salary_min)) / 2000; return k < 100 ? "u100" : k < 150 ? "100" : k < 200 ? "150" : k < 450 ? "200" : "450"; };
 const FIT = ["Director", "Executive", "Principal+"];
-const DEFAULTS = {country:"", company:[], state:"", dept:"", level:[], remote:"", q:"", role:[], domain:[], pay:[], wa:[], sort:""};
+const DEFAULTS = {country:"", company:[], state:"", dept:"", level:[], remote:"", q:"", role:[], domain:[], pay:[], wa:[], date:"", sort:""};
 const F = {...DEFAULTS, company: [], role: [], level: [], domain: [], pay: [], wa: []};
 let page = 0; const PER = 15;
 
@@ -223,13 +224,14 @@ function filtered(skip) {
     (skip === "domain" || !F.domain.length || F.domain.some(d => j.domains.includes(d))) &&
     (!F.pay.length || (j.salary_min && F.pay.includes(BAND(j)))) &&
     (!F.wa.length || j.wa) &&
+    (!F.date || (j.ts && NOW - j.ts <= +F.date * DAY)) &&
     (!F.company.length || F.company.includes(j.company)) &&
     (!F.state || j.states.includes(F.state)) &&
     (!F.country || j.ctry === F.country) &&
     (!F.level.length || F.level.includes(j.seniority)) &&
     (F.remote === "" || (F.remote === "1") === j.remote) &&
     (!toks.length || (hay => toks.every(t => t.length > 3 ? hay.includes(t) : new RegExp("(^|[^a-z0-9])" + t.replace(/[^a-z0-9]/g, "") + "([^a-z0-9]|$)").test(hay)))((j.title + " " + j.company + " " + j.location + " " + j.department).toLowerCase()))
-  ).sort(F.pay.length && F.sort ? (a, b) => ((b.salary_min + b.salary_max) - (a.salary_min + a.salary_max)) * (F.sort === "lo" ? -1 : 1) : (a, b) => (FIT.includes(b.seniority) - FIT.includes(a.seniority)) || ((b.ts || 0) - (a.ts || 0)));
+  ).sort(F.pay.length && F.sort ? (a, b) => ((b.salary_min + b.salary_max) - (a.salary_min + a.salary_max)) * (F.sort === "lo" ? -1 : 1) : (a, b) => (b.ts || 0) - (a.ts || 0));
 }
 
 function fillSelect(id, entries) {
@@ -280,7 +282,7 @@ function render() {
   $("fdw").setEntries(dcount);
   const week = rows.filter(j => j.ts && NOW - j.ts <= 7 * DAY).length;
   // Sales, Support and Supply chain jobs load on demand; with no filters on, the total still counts them.
-  const unfilt = !(F.country || F.state || F.dept || F.remote || F.q || F.company.length || F.role.length || F.level.length || F.domain.length || F.pay.length || F.wa.length) ? 1 : 0, deferred = Object.values(LAZYC).reduce((a, b) => a + b, 0);
+  const unfilt = !(F.country || F.state || F.dept || F.remote || F.q || F.company.length || F.role.length || F.level.length || F.domain.length || F.pay.length || F.wa.length || F.date) ? 1 : 0, deferred = Object.values(LAZYC).reduce((a, b) => a + b, 0);
   $("tiles").innerHTML = [
     [(rows.length + unfilt * deferred).toLocaleString(), ("open " + (RG_LABEL[window.__rg] || "") + " roles (matching)").replace("  ", " ")],
     [unfilt && DATA.companyCount ? DATA.companyCount : new Set(rows.map(j => j.company)).size, "companies"],
@@ -341,7 +343,7 @@ function init() {
   const bind = (id, key, ev = "change") => $(id).addEventListener(ev, e => { F[key] = e.target.value; page = 0; sync(); render(); });
   msMake("fwa", "fwav", "wa", "Any authorization", "options", [["wa", jobs.filter(j => j.wa).length]], { wa: "US Citizen/GC only" }, false); window.__waSet = () => $("fwaw").setEntries([["wa", jobs.filter(j => j.wa).length]]);
   $("fpay").addEventListener("change", () => { if (!F.pay.length) { F.sort = ""; $("fsort").value = ""; } }); $("fsort").addEventListener("change", e => { F.sort = e.target.value; page = 0; render(); });
-  bind("fs", "state"); bind("fr", "remote"); bind("q", "q", "input");
+  bind("fs", "state"); bind("fr", "remote"); bind("fdt", "date"); bind("q", "q", "input");
   $("reset").onclick = () => { Object.assign(F, DEFAULTS, { company: [], role: [], level: [], domain: [], pay: [], wa: [] }); $("q").value = ""; page = 0; sync(); render(); };
   const pgClick = e => { const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return; page += +b.dataset.pg; render(); (e.currentTarget.id === "pgBot" ? $("count") : $("pgTop")).scrollIntoView({ block: "start" }); };
   $("pgTop").onclick = pgClick; $("pgBot").onclick = pgClick;
@@ -352,7 +354,7 @@ function init() {
   render();
 }
 function chips() { document.querySelectorAll("#pop button").forEach(b => b.classList.toggle("on", b.dataset.remote ? F.remote === "1" : (b.dataset.q && F.q === b.dataset.q))); }
-function sync() { chips(); $("fsort").value = F.sort; msSync(); $("fs").value = F.state; $("fr").value = F.remote; }
+function sync() { chips(); $("fsort").value = F.sort; msSync(); $("fs").value = F.state; $("fr").value = F.remote; $("fdt").value = F.date || ""; }
 // Big families (Sales, Customer support, Supply chain & logistics) arrive on demand from /api/jobs-more; the main file only carries their counts.
 let LAZYC = {}, lazyState = 0;
 const LAZYQ = /\b(sales|account|customer|support|service|supply|logistic|warehouse|driver|retail|buyer|procure|fulfil|inventory|freight|shipping|mechanic|courier|forklift)/i;
@@ -489,7 +491,7 @@ sync()}).catch(function(){})})();
 if(typeof render!=="function"||typeof F==="undefined")return;
 var ok=null,MSG="<b>Create a free account</b> to save jobs, track applications and use advanced filters.";
 function snap(){return JSON.parse(JSON.stringify(F))}
-function active(){return(window.__rg&&window.__rg!=="all"?1:0)+(F.role.length?1:0)+(F.company.length?1:0)+(F.domain.length?1:0)+(F.level.length?1:0)+(F.country?1:0)+(F.state?1:0)+(F.dept?1:0)+(F.remote?1:0)}
+function active(){return(window.__rg&&window.__rg!=="all"?1:0)+(F.role.length?1:0)+(F.company.length?1:0)+(F.domain.length?1:0)+(F.level.length?1:0)+(F.country?1:0)+(F.state?1:0)+(F.dept?1:0)+(F.remote?1:0)+(F.date?1:0)}
 var r0=render;ok=snap();
 render=function(){
   if(window.__jfOut===true&&ok&&active()>2){
