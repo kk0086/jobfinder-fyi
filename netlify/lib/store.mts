@@ -42,17 +42,22 @@ export async function runHot(budgetMs = 24000) {
   const co: HotBlob["co"] = { ...prevHot.co };
   const report: { name: string; ok: boolean; total: number; kept: number }[] = [];
   const started = Date.now();
-  for (const c of chunks) {
-    if (Date.now() - started > budgetMs) break;
-    const names = new Set(mine.filter(x => chunkOf(x.i) === c).map(x => x.f.name));
-    const prevJobs = [...names].flatMap(n => co[n]?.jobs || old.get(n) || []);
-    const { jobs, report: rep } = await crawlChunk(c, Math.max(4000, budgetMs - (Date.now() - started)), prevJobs, names);
-    const now = new Date().toISOString();
-    for (const r of rep) {
-      report.push(r);
-      if (r.ok) co[r.name] = { at: now, jobs: jobs.filter(j => j.company === r.name) };
+  const todo = [...chunks];
+  const worker = async () => {
+    while (todo.length) {
+      const c = todo.shift()!;
+      if (Date.now() - started > budgetMs) { for (const x of mine.filter(m => chunkOf(m.i) === c)) report.push({ name: x.f.name, ok: false, total: 0, kept: 0 }); continue; }
+      const names = new Set(mine.filter(x => chunkOf(x.i) === c).map(x => x.f.name));
+      const prevJobs = [...names].flatMap(n => co[n]?.jobs || old.get(n) || []);
+      const { jobs, report: rep } = await crawlChunk(c, Math.max(4000, budgetMs - (Date.now() - started)), prevJobs, names);
+      const now = new Date().toISOString();
+      for (const r of rep) {
+        report.push(r);
+        if (r.ok) co[r.name] = { at: now, jobs: jobs.filter(j => j.company === r.name) };
+      }
     }
-  }
+  };
+  await Promise.all(Array.from({ length: 6 }, worker));
   const out: HotBlob = { at: new Date().toISOString(), co };
   await store.setJSON("v2-hot", out);
   await store.set("dirty-at", String(Date.now())).catch(() => {});
