@@ -74,9 +74,39 @@ const esc = (s: any) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;"
 const SYM: Record<string, string> = { USD: "$", GBP: "£", EUR: "€", CAD: "C$", AUD: "A$" };
 const money = (n: number, cur = "USD") => (SYM[cur] || cur + " ") + Math.round(n / 1000) + "K";
 const ORIGIN = "https://jobfinder.fyi";
+const CSS = `:root{--bg:#fafaf8;--card:#fff;--ink:#1d1d1b;--muted:#6b6b66;--line:#e6e5df;--link:#0f566f;--accent:#f96b4c;--pay:#0b7a4b}@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--ink:#ecebe6;--muted:#9a9990;--line:#2f2f2b;--link:#7cc4dc;--pay:#4cc38a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}a{color:var(--link)}
+.w{max-width:960px;margin:0 auto;padding:18px 16px 50px}.logo img{height:56px;width:56px;display:block}.crumb{color:var(--muted);font-size:13px;margin:14px 0 4px}.crumb a{color:var(--muted)}
+h1{font-size:30px;line-height:1.2;margin:4px 0 10px}h2{font-size:17px;margin:26px 0 10px}.stats{display:flex;flex-wrap:wrap;gap:10px 22px;margin:14px 0}.stats span{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px}
+.note{color:var(--muted)}.cta{display:inline-block;background:var(--accent);color:#1d1d1b;font-weight:700;text-decoration:none;border-radius:10px;padding:10px 18px;margin:8px 0}
+ul.jobs{list-style:none;margin:0;padding:0}.jobs li{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:0 0 8px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.jobs li>a{flex:1;min-width:0;padding:12px 14px;text-decoration:none;color:inherit;display:block}.jobs .t{display:block;font-weight:600;color:var(--link)}.jobs .c{display:block;color:var(--muted);font-size:13px;margin-top:2px}.jobs .d{color:var(--muted);font-size:12px;padding:12px 14px;white-space:nowrap}.pay{color:var(--pay)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px}.box h3{margin:0 0 6px;font-size:14px}.box ul{list-style:none;margin:0;padding:0}.box li{display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid var(--line)}.box li:first-child{border:0}.box li span{color:var(--muted)}
+.rel{display:flex;flex-wrap:wrap;gap:8px}.rel a{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;text-decoration:none}
+footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;display:flex;gap:16px;flex-wrap:wrap}footer a{color:var(--muted)}
+@media (max-width:560px){h1{font-size:24px}.jobs li{flex-direction:column;gap:0}.jobs .d{padding:0 14px 10px}}.ans{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px 16px;margin:14px 0}.ans p{margin:0}table.win{border-collapse:collapse;width:100%;margin:8px 0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}table.win th,table.win td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)}table.win td.n,table.win th.n{text-align:right;font-variant-numeric:tabular-nums}table.win tr:last-child td{border-bottom:0}.faq h3{font-size:15px;margin:16px 0 4px}.faq p{margin:0}`;
 const median = (a: number[]) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
 const top = (m: Map<string, number>, n: number) => [...m].sort((a, b) => b[1] - a[1]).slice(0, n);
 const ago = (iso?: string | null) => { if (!iso) return ""; const d = (Date.now() - Date.parse(iso)) / 864e5; if (!(d >= 0)) return ""; return d < 1 ? "Posted today" : d < 30 ? `Posted ${Math.round(d)}d ago` : ""; };
+
+
+// ---- Daily market numbers (computed from the jobs we hold each time the page is rebuilt) ----
+export const HUB_SLUG = "new-jobs-today";
+const DAY = 864e5;
+const fmtDate = (ms: number) => new Date(ms).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
+const num = (n: number) => n.toLocaleString("en-US");
+// Roles with a real posting date inside the window (future-dated postings are ignored).
+const postedAt = (j: Job, now: number) => { const t = Date.parse((j as any).posted || ""); return t && t <= now + 36e5 ? t : 0; };
+function windows(jobs: Job[], now: number) {
+  let d1 = 0, d7 = 0, d30 = 0, dated = 0;
+  for (const j of jobs) { const t = postedAt(j, now); if (!t) continue; dated++; const a = now - t; if (a <= DAY) d1++; if (a <= 7 * DAY) d7++; if (a <= 30 * DAY) d30++; }
+  return { d1, d7, d30, dated };
+}
+const topNew = (jobs: Job[], now: number, days: number) => { const m = new Map<string, number>(); for (const j of jobs) { const t = postedAt(j, now); if (t && now - t <= days * DAY) m.set(j.company, (m.get(j.company) || 0) + 1); } return top(m, 5); };
+const fmtList = (a: [string, number][]) => a.map(([c, n]) => `${c} (${num(n)})`).join(", ");
+type QA = { q: string; a: string };
+const faqHtml = (qa: QA[]) => `<section class="faq"><h2>Frequently asked questions</h2>${qa.map(x => `<h3>${esc(x.q)}</h3><p>${esc(x.a)}</p>`).join("")}</section>`;
+const faqLd = (qa: QA[]) => ({ "@type": "FAQPage", mainEntity: qa.map(x => ({ "@type": "Question", name: x.q, acceptedAnswer: { "@type": "Answer", text: x.a } })) });
+const UPDATE_QA: QA = { q: "How often is this page updated?", a: "Job Finder reads employers' own careers pages every day, and the busiest hiring companies several times a day. The counts on this page are recalculated each time new listings arrive." };
 
 export function renderLanding(l: Landing, all: Job[], asOf: string): { html: string; count: number } {
   const jobs = all.filter(l.match).filter(j => j.url && j.title);
@@ -92,6 +122,20 @@ export function renderLanding(l: Landing, all: Job[], asOf: string): { html: str
     if ((j as any).salary_min && ((j as any).salary_cur || "USD") === "USD") { lo.push((j as any).salary_min); hi.push((j as any).salary_max || (j as any).salary_min); }
   }
   const nCo = cos.size, pct = count ? Math.round(remote / count * 100) : 0;
+  const now = Date.now(), what = l.h1.replace(/ Jobs$/, ""), W = windows(jobs, now), today = fmtDate(now);
+  const cov = count ? Math.round(W.dated / count * 100) : 0;
+  const covNote = cov && cov < 95 ? ` Posting dates are available for ${cov}% of these listings, so the new-job counts are a minimum.` : "";
+  const answer = `As of ${today}, Job Finder lists ${num(count)} open ${what} jobs from ${num(nCo)} ${nCo === 1 ? "company" : "companies"}. ${num(W.d1)} ${W.d1 === 1 ? "was" : "were"} posted in the last 24 hours, ${num(W.d7)} in the last 7 days and ${num(W.d30)} in the last 30 days.${covNote}`;
+  const topLocN = top(locs, 5), topNew7 = topNew(jobs, now, 7);
+  const qa: QA[] = [
+    { q: `How many ${what} jobs are open right now?`, a: `As of ${today}, there are ${num(count)} open ${what} jobs from ${num(nCo)} companies on Job Finder.` },
+    { q: `How many new ${what} jobs were posted in the last 24 hours?`, a: `${num(W.d1)} new ${what} jobs were posted in the last 24 hours, ${num(W.d7)} in the last 7 days and ${num(W.d30)} in the last 30 days (as of ${today}).${covNote}` },
+    ...(top(cos, 5).length ? [{ q: `Which companies have the most ${what} openings?`, a: `The companies with the most open ${what} jobs are ${fmtList(top(cos, 5))}.` }] : []),
+    ...(W.d7 >= 5 && topNew7.length ? [{ q: `Which companies posted the most new ${what} jobs this week?`, a: `In the last 7 days the most new ${what} jobs were posted by ${fmtList(topNew7)}.` }] : []),
+    ...(topLocN.length ? [{ q: `Where are most ${what} jobs located?`, a: `The most ${what} jobs are in ${fmtList(topLocN)}. About ${pct}% are remote-friendly.` }] : []),
+    ...(lo.length >= 5 ? [{ q: `How much do ${what} jobs pay?`, a: `Among the ${num(lo.length)} ${what} jobs that list pay, the typical range is ${money(median(lo))} to ${money(median(hi))} a year in USD. Many employers do not publish pay, so this covers only listings that do.` }] : []),
+    UPDATE_QA,
+  ];
   const stats = [`<b>${count.toLocaleString()}</b> open roles`, `<b>${nCo.toLocaleString()}</b> companies`, `<b>${pct}%</b> remote-friendly`];
   const payLine = lo.length >= 5 ? `<p class="note">Among the ${lo.length.toLocaleString()} roles that list pay, the typical range is <b>${money(median(lo))}–${money(median(hi))}</b> a year (USD).</p>` : "";
   const topCo = top(cos, 8).map(([c, n]) => `<li>${esc(c)} <span>${n}</span></li>`).join("");
@@ -102,38 +146,94 @@ export function renderLanding(l: Landing, all: Job[], asOf: string): { html: str
   }).join("");
   const rel = l.related.map(s => bySlug(s)).filter(Boolean).map(r => `<a href="/jobs/${r!.slug}">${esc(r!.h1)}</a>`).join("");
   const url = `${ORIGIN}/jobs/${l.slug}`;
-  const desc = `${count.toLocaleString()} current ${l.h1.replace(/ Jobs$/, "").toLowerCase()} jobs from ${nCo.toLocaleString()} companies, updated daily. Apply directly on each employer's careers page.`.slice(0, 160);
+  const title = `${l.h1}: ${num(count)} Open${W.d1 ? `, ${num(W.d1)} New in 24 Hours` : ""}`;
+  const desc = `${num(W.d1)} new ${what} jobs in the last 24 hours and ${num(W.d7)} in the last 7 days, out of ${num(count)} open roles at ${num(nCo)} companies. Updated daily.`.slice(0, 160);
   const ld = { "@context": "https://schema.org", "@graph": [
     { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Job Finder", item: ORIGIN + "/" }, { "@type": "ListItem", position: 2, name: l.h1, item: url }] },
+    faqLd(qa),
+    { "@type": "WebPage", name: title, url, dateModified: new Date(now).toISOString(), isPartOf: { "@type": "WebSite", name: "Job Finder", url: ORIGIN } },
     { "@type": "ItemList", name: l.h1, numberOfItems: list.length, itemListElement: list.slice(0, 20).map((j, i) => ({ "@type": "ListItem", position: i + 1, name: `${j.title} at ${j.company}`, url: j.url })) },
   ] };
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(l.title)} | Job Finder</title><meta name="description" content="${esc(desc)}">
+<title>${esc(title)} | Job Finder</title><meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${url}">${count < 10 ? '<meta name="robots" content="noindex,follow">' : ""}
-<meta property="og:title" content="${esc(l.title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${url}"><meta property="og:image" content="${ORIGIN}/icon-512.png">
+<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${url}"><meta property="og:image" content="${ORIGIN}/icon-512.png">
 <link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>
-<style>:root{--bg:#fafaf8;--card:#fff;--ink:#1d1d1b;--muted:#6b6b66;--line:#e6e5df;--link:#0f566f;--accent:#f96b4c;--pay:#0b7a4b}@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--ink:#ecebe6;--muted:#9a9990;--line:#2f2f2b;--link:#7cc4dc;--pay:#4cc38a}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}a{color:var(--link)}
-.w{max-width:960px;margin:0 auto;padding:18px 16px 50px}.logo img{height:56px;width:56px;display:block}.crumb{color:var(--muted);font-size:13px;margin:14px 0 4px}.crumb a{color:var(--muted)}
-h1{font-size:30px;line-height:1.2;margin:4px 0 10px}h2{font-size:17px;margin:26px 0 10px}.stats{display:flex;flex-wrap:wrap;gap:10px 22px;margin:14px 0}.stats span{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px}
-.note{color:var(--muted)}.cta{display:inline-block;background:var(--accent);color:#1d1d1b;font-weight:700;text-decoration:none;border-radius:10px;padding:10px 18px;margin:8px 0}
-ul.jobs{list-style:none;margin:0;padding:0}.jobs li{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:0 0 8px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.jobs li>a{flex:1;min-width:0;padding:12px 14px;text-decoration:none;color:inherit;display:block}.jobs .t{display:block;font-weight:600;color:var(--link)}.jobs .c{display:block;color:var(--muted);font-size:13px;margin-top:2px}.jobs .d{color:var(--muted);font-size:12px;padding:12px 14px;white-space:nowrap}.pay{color:var(--pay)}
-.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px}.box h3{margin:0 0 6px;font-size:14px}.box ul{list-style:none;margin:0;padding:0}.box li{display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid var(--line)}.box li:first-child{border:0}.box li span{color:var(--muted)}
-.rel{display:flex;flex-wrap:wrap;gap:8px}.rel a{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;text-decoration:none}
-footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;display:flex;gap:16px;flex-wrap:wrap}footer a{color:var(--muted)}
-@media (max-width:560px){h1{font-size:24px}.jobs li{flex-direction:column;gap:0}.jobs .d{padding:0 14px 10px}}</style></head>
+<style>${CSS}</style></head>
 <body><div class="w"><a class="logo" href="/" aria-label="Job Finder home"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a>
 <nav class="crumb"><a href="/">Job Finder</a> › ${esc(l.h1)}</nav>
 <h1>${esc(l.h1)}</h1>
 ${l.intro.map(p => `<p>${esc(p)}</p>`).join("")}
+<div class="ans"><p>${esc(answer)}</p></div>
 <div class="stats">${stats.map(s => `<span>${s}</span>`).join("")}</div>${payLine}
+<h2>New ${esc(what)} jobs by time posted</h2>
+<table class="win"><thead><tr><th>Posted</th><th class="n">${esc(what)} jobs</th></tr></thead><tbody><tr><td>Last 24 hours</td><td class="n">${num(W.d1)}</td></tr><tr><td>Last 7 days</td><td class="n">${num(W.d7)}</td></tr><tr><td>Last 30 days</td><td class="n">${num(W.d30)}</td></tr><tr><td>All open roles</td><td class="n">${num(count)}</td></tr></tbody></table><p class="note">Counted on ${esc(today)} (UTC) from each listing's posting date.${esc(covNote)}</p>
 <a class="cta" href="/?q=${encodeURIComponent(l.query)}">Click here to search and filter all ${count.toLocaleString()} roles</a>
 <h2>Latest ${esc(l.h1.replace(/ Jobs$/, ""))} jobs</h2>
 ${rows ? `<ul class="jobs">${rows}</ul>` : "<p>No current openings found. Check back tomorrow.</p>"}
 ${count > list.length ? `<p><a class="cta" href="/?q=${encodeURIComponent(l.query)}">Click here to search and filter all ${count.toLocaleString()} roles</a></p>` : ""}
 <div class="cols"><div class="box"><h3>Top hiring companies</h3><ul>${topCo}</ul></div><div class="box"><h3>Top locations</h3><ul>${topLoc || "<li>Remote and multiple locations</li>"}</ul></div></div>
-<h2>Related searches</h2><div class="rel">${rel}<a href="/">All jobs</a></div>
+${faqHtml(qa)}
+<h2>Related searches</h2><div class="rel">${rel}<a href="/jobs/${HUB_SLUG}">New jobs today</a><a href="/">All jobs</a></div>
+<footer><span>&copy; 2026 Jobfinder.fyi</span><span>Jobs updated daily · data as of ${esc(asOf.slice(0, 10))}</span><a href="/">Search all jobs</a><a href="/privacy.html">Privacy</a></footer></div></body></html>`;
+  return { html, count };
+}
+
+// /jobs/new-jobs-today: one page answering "how many new jobs were posted in the last 24 hours / this week", across every role family.
+export function renderHub(all: Job[], asOf: string): { html: string; count: number } {
+  const now = Date.now(), today = fmtDate(now);
+  const jobs = all.filter(j => j.url && j.title), count = jobs.length;
+  const W = windows(jobs, now), cov = count ? Math.round(W.dated / count * 100) : 0;
+  const covNote = cov && cov < 95 ? ` Posting dates are available for ${cov}% of listings, so the new-job counts are a minimum.` : "";
+  const cos = new Set(jobs.map(j => j.company));
+  const fam = new Map<string, { open: number; d1: number; d7: number; d30: number }>();
+  for (const j of jobs) {
+    const r = (j as any).role; if (!r) continue;
+    const f = fam.get(r) || fam.set(r, { open: 0, d1: 0, d7: 0, d30: 0 }).get(r)!;
+    f.open++; const t = postedAt(j, now); if (!t) continue; const a = now - t;
+    if (a <= DAY) f.d1++; if (a <= 7 * DAY) f.d7++; if (a <= 30 * DAY) f.d30++;
+  }
+  const famRows = [...fam].filter(([, f]) => f.open >= 20).sort((a, b) => b[1].d7 - a[1].d7 || b[1].open - a[1].open);
+  const topFam = famRows.slice(0, 5).map(([r, f]) => [r, f.d7] as [string, number]);
+  const topCo7 = topNew(jobs, now, 7), topCo1 = topNew(jobs, now, 1);
+  const url = `${ORIGIN}/jobs/${HUB_SLUG}`;
+  const h1 = "New Jobs Today: Openings Posted in the Last 24 Hours";
+  const title = `New Jobs: ${num(W.d1)} Posted in 24 Hours, ${num(W.d7)} This Week`;
+  const answer = `As of ${today}, ${num(W.d1)} new jobs were posted in the last 24 hours, ${num(W.d7)} in the last 7 days and ${num(W.d30)} in the last 30 days, among ${num(count)} open jobs from ${num(cos.size)} companies on Job Finder.${covNote}`;
+  const desc = `${num(W.d1)} new jobs posted in the last 24 hours and ${num(W.d7)} in the last 7 days, by job category and company. Updated daily.`.slice(0, 160);
+  const qa: QA[] = [
+    { q: "How many new jobs were posted in the last 24 hours?", a: `${num(W.d1)} new jobs were posted in the last 24 hours as of ${today}, out of ${num(count)} open jobs from ${num(cos.size)} companies on Job Finder.${covNote}` },
+    { q: "How many new jobs were posted this week?", a: `${num(W.d7)} new jobs were posted in the last 7 days and ${num(W.d30)} in the last 30 days (as of ${today}).` },
+    ...(topFam.length ? [{ q: "Which job categories have the most new openings this week?", a: `In the last 7 days the most new jobs were in ${fmtList(topFam)}.` }] : []),
+    ...(topCo7.length ? [{ q: "Which companies are posting the most new jobs this week?", a: `In the last 7 days the most new jobs were posted by ${fmtList(topCo7)}.` }] : []),
+    UPDATE_QA,
+  ];
+  const ld = { "@context": "https://schema.org", "@graph": [
+    { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Job Finder", item: ORIGIN + "/" }, { "@type": "ListItem", position: 2, name: "New jobs today", item: url }] },
+    faqLd(qa),
+    { "@type": "WebPage", name: title, url, dateModified: new Date(now).toISOString(), isPartOf: { "@type": "WebSite", name: "Job Finder", url: ORIGIN } },
+  ] };
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)} | Job Finder</title><meta name="description" content="${esc(desc)}">
+<link rel="canonical" href="${url}">
+<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${url}"><meta property="og:image" content="${ORIGIN}/icon-512.png">
+<link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>
+<style>${CSS}</style></head>
+<body><div class="w"><a class="logo" href="/" aria-label="Job Finder home"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a>
+<nav class="crumb"><a href="/">Job Finder</a> › New jobs today</nav>
+<h1>${esc(h1)}</h1>
+<div class="ans"><p>${esc(answer)}</p></div>
+<h2>New jobs by time posted</h2>
+<table class="win"><thead><tr><th>Posted</th><th class="n">New jobs</th></tr></thead><tbody><tr><td>Last 24 hours</td><td class="n">${num(W.d1)}</td></tr><tr><td>Last 7 days</td><td class="n">${num(W.d7)}</td></tr><tr><td>Last 30 days</td><td class="n">${num(W.d30)}</td></tr><tr><td>All open jobs</td><td class="n">${num(count)}</td></tr></tbody></table>
+<p class="note">Counted on ${esc(today)} (UTC) from each listing's posting date, across jobs collected from employers' own careers pages.${esc(covNote)}</p>
+<h2>New jobs by category</h2>
+<table class="win"><thead><tr><th>Job category</th><th class="n">24 hours</th><th class="n">7 days</th><th class="n">30 days</th><th class="n">Open</th></tr></thead><tbody>${famRows.map(([r, f]) => `<tr><td>${esc(r)}</td><td class="n">${num(f.d1)}</td><td class="n">${num(f.d7)}</td><td class="n">${num(f.d30)}</td><td class="n">${num(f.open)}</td></tr>`).join("")}</tbody></table>
+<div class="cols"><div class="box"><h3>Most new jobs in the last 24 hours</h3><ul>${topCo1.map(([c, n]) => `<li>${esc(c)} <span>${n}</span></li>`).join("") || "<li>No new jobs found</li>"}</ul></div><div class="box"><h3>Most new jobs in the last 7 days</h3><ul>${topCo7.map(([c, n]) => `<li>${esc(c)} <span>${n}</span></li>`).join("")}</ul></div></div>
+<a class="cta" href="/">Search and filter all jobs</a>
+${faqHtml(qa)}
+<h2>Browse by job type</h2><div class="rel">${LANDINGS.map(r => `<a href="/jobs/${r.slug}">${esc(r.h1)}</a>`).join("")}<a href="/">All jobs</a></div>
 <footer><span>&copy; 2026 Jobfinder.fyi</span><span>Jobs updated daily · data as of ${esc(asOf.slice(0, 10))}</span><a href="/">Search all jobs</a><a href="/privacy.html">Privacy</a></footer></div></body></html>`;
   return { html, count };
 }

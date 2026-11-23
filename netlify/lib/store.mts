@@ -120,7 +120,7 @@ const SNAP_MAX_AGE = 6 * 60 * 60 * 1000; // older than this and we rebuild live 
 const isFresh = (m: any) => m && typeof m.t === "number" && Date.now() - m.t < SNAP_MAX_AGE;
 
 export async function writeSnapshot() {
-  const { LANDINGS, renderLanding } = await import("./seo.mts");
+  const { LANDINGS, renderLanding, renderHub, HUB_SLUG } = await import("./seo.mts");
   const store = getStore("feed");
   const { jobs, at } = await loadAll();
   const t = Date.now();
@@ -133,7 +133,8 @@ export async function writeSnapshot() {
     cache.set(r + "+more", { t, body: more });
   }
   for (const l of LANDINGS) await store.set(`snap-page-${l.slug}`, renderLanding(l, jobs as any, at || new Date().toISOString()).html, { metadata: { t } });
-  return { regions: REGIONS.length, pages: LANDINGS.length, jobs: jobs.length, at };
+  await store.set(`snap-page-${HUB_SLUG}`, renderHub(jobs as any, at || new Date().toISOString()).html, { metadata: { t } });
+  return { regions: REGIONS.length, pages: LANDINGS.length + 1, jobs: jobs.length, at };
 }
 
 // Rebuilds only when a refresh has written something since the last build, or the last build is 2 hours old (keeps the 24h new-jobs count and relative ages current).
