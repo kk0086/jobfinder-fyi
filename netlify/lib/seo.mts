@@ -168,7 +168,7 @@ ${l.intro.map(p => `<p>${esc(p)}</p>`).join("")}
 <div class="ans"><p>${esc(answer)}</p></div>
 <div class="stats">${stats.map(s => `<span>${s}</span>`).join("")}</div>${payLine}
 <h2>New ${esc(what)} jobs by time posted</h2>
-<table class="win"><thead><tr><th>Posted</th><th class="n">${esc(what)} jobs</th></tr></thead><tbody><tr><td>Last 24 hours</td><td class="n">${num(W.d1)}</td></tr><tr><td>Last 7 days</td><td class="n">${num(W.d7)}</td></tr><tr><td>Last 30 days</td><td class="n">${num(W.d30)}</td></tr><tr><td>All open roles</td><td class="n">${num(count)}</td></tr></tbody></table><p class="note">Counted on ${esc(today)} (UTC) from each listing's posting date.${esc(covNote)}</p>
+<table class="win"><thead><tr><th>Posted</th><th class="n">${esc(what)} jobs</th></tr></thead><tbody><tr><td>Last 24 hours</td><td class="n">${num(W.d1)}</td></tr><tr><td>Last 7 days</td><td class="n">${num(W.d7)}</td></tr><tr><td>Last 30 days</td><td class="n">${num(W.d30)}</td></tr><tr><td>All open roles</td><td class="n">${num(count)}</td></tr></tbody></table><p class="note">Counted on ${esc(today)} (UTC) from each listing's posting date, using the most recent read of each employer's careers page.${esc(covNote)}</p>
 <a class="cta" href="/?q=${encodeURIComponent(l.query)}">Click here to search and filter all ${count.toLocaleString()} roles</a>
 <h2>Latest ${esc(l.h1.replace(/ Jobs$/, ""))} jobs</h2>
 ${rows ? `<ul class="jobs">${rows}</ul>` : "<p>No current openings found. Check back tomorrow.</p>"}
@@ -227,7 +227,7 @@ export function renderHub(all: Job[], asOf: string): { html: string; count: numb
 <div class="ans"><p>${esc(answer)}</p></div>
 <h2>New jobs by time posted</h2>
 <table class="win"><thead><tr><th>Posted</th><th class="n">New jobs</th></tr></thead><tbody><tr><td>Last 24 hours</td><td class="n">${num(W.d1)}</td></tr><tr><td>Last 7 days</td><td class="n">${num(W.d7)}</td></tr><tr><td>Last 30 days</td><td class="n">${num(W.d30)}</td></tr><tr><td>All open jobs</td><td class="n">${num(count)}</td></tr></tbody></table>
-<p class="note">Counted on ${esc(today)} (UTC) from each listing's posting date, across jobs collected from employers' own careers pages.${esc(covNote)}</p>
+<p class="note">Counted on ${esc(today)} (UTC) from each listing's posting date, using the most recent read of each employer's careers page.${esc(covNote)}</p>
 <h2>New jobs by category</h2>
 <table class="win"><thead><tr><th>Job category</th><th class="n">24 hours</th><th class="n">7 days</th><th class="n">30 days</th><th class="n">Open</th></tr></thead><tbody>${famRows.map(([r, f]) => `<tr><td>${esc(r)}</td><td class="n">${num(f.d1)}</td><td class="n">${num(f.d7)}</td><td class="n">${num(f.d30)}</td><td class="n">${num(f.open)}</td></tr>`).join("")}</tbody></table>
 <div class="cols"><div class="box"><h3>Most new jobs in the last 24 hours</h3><ul>${topCo1.map(([c, n]) => `<li>${esc(c)} <span>${n}</span></li>`).join("") || "<li>No new jobs found</li>"}</ul></div><div class="box"><h3>Most new jobs in the last 7 days</h3><ul>${topCo7.map(([c, n]) => `<li>${esc(c)} <span>${n}</span></li>`).join("")}</ul></div></div>
