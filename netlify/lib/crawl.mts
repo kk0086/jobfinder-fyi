@@ -91,9 +91,9 @@ async function ghPay(slug: string, id: any) {
 export type CompanyResult = { name: string; ok: boolean; total: number; kept: number; error?: string };
 
 // Reads every feed in one chunk and returns normalized roles plus a per-company report.
-export async function crawlChunk(chunk: number, budgetMs = 24000, prevJobs: any[] = []) {
+export async function crawlChunk(chunk: number, budgetMs = 24000, prevJobs: any[] = [], only?: Set<string>) {
   const started = Date.now();
-  const mine = (await loadFeeds()).filter((_, i) => chunkOf(i) === chunk);
+  const mine = (await loadFeeds()).filter((f, i) => chunkOf(i) === chunk && (!only || only.has(f.name)));
   const jobs: Job[] = [];
   const report: CompanyResult[] = [];
   let next = 0;

@@ -1,7 +1,7 @@
 import type { Config } from "@netlify/functions";
 import { isOwner } from "../lib/auth.mts";
 import { getStore } from "@netlify/blobs";
-import { runChunk, jobsPayload, TOTAL_BATCHES } from "../lib/store.mts";
+import { runChunk, runHot, jobsPayload, TOTAL_BATCHES } from "../lib/store.mts";
 
 // Owner-only manual refresh: POST /api/refresh?chunk=0..14
 export default async (req: Request) => {
@@ -14,6 +14,7 @@ export default async (req: Request) => {
     await getStore("feed").setJSON("import-wayfair", { at: new Date().toISOString(), rows });
     return Response.json({ stored: rows.length });
   }
+  if (q.get("hot")) return Response.json(await runHot());
   const c = +(q.get("chunk") ?? -1);
   if (!(c >= 0 && c < TOTAL_BATCHES)) return Response.json({ error: "chunk must be 0.." + (TOTAL_BATCHES - 1) }, { status: 400 });
   const r = await runChunk(c);
