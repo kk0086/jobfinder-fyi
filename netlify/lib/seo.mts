@@ -224,6 +224,7 @@ export function renderHub(all: Job[], asOf: string): { html: string; count: numb
 <body><div class="w"><a class="logo" href="/" aria-label="Job Finder home"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a>
 <nav class="crumb"><a href="/">Job Finder</a> › New jobs today</nav>
 <h1>${esc(h1)}</h1>
+<a class="cta" href="/">Search and filter all jobs</a>
 <div class="ans"><p>${esc(answer)}</p></div>
 <h2>New jobs by time posted</h2>
 <table class="win"><thead><tr><th>Posted</th><th class="n">New jobs</th></tr></thead><tbody><tr><td>Last 24 hours</td><td class="n">${num(W.d1)}</td></tr><tr><td>Last 7 days</td><td class="n">${num(W.d7)}</td></tr><tr><td>Last 30 days</td><td class="n">${num(W.d30)}</td></tr><tr><td>All open jobs</td><td class="n">${num(count)}</td></tr></tbody></table>
