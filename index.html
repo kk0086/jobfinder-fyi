@@ -468,6 +468,7 @@ if(b){b.classList.toggle("on",sv);b.setAttribute("aria-label",sv?"Saved. Click t
 if(c){c.classList.toggle("on",ap);c.setAttribute("aria-checked",ap?"true":"false")}els[i].classList.toggle("sd",sv||ap)}
 var n1=document.getElementById("pmS"),n2=document.getElementById("pmA");if(n1)n1.textContent=Object.keys(SV).length;if(n2)n2.textContent=Object.keys(AP).length}
 window.__jfSync=sync;window.__jfGate=openGate;
+document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest("button[data-pg]");if(b&&!b.disabled&&window.__jfOut===true&&+b.dataset.pg>0){e.preventDefault();e.stopImmediatePropagation();openGate("<b>Create a free account or log in</b> to see more results.",true)}},true);
 function post(op,job){return fetch("/api/auth/job",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({op:op,job:job})}).then(function(r){return r.json().then(function(d){return{ok:r.ok,s:r.status,d:d}})})}
 document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest(".act button");if(!b)return;e.preventDefault();e.stopPropagation();
 var u=b.parentNode.getAttribute("data-u");
