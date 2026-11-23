@@ -83,7 +83,7 @@ ul.jobs{list-style:none;margin:0;padding:0}.jobs li{background:var(--card);borde
 .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px}.box h3{margin:0 0 6px;font-size:14px}.box ul{list-style:none;margin:0;padding:0}.box li{display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid var(--line)}.box li:first-child{border:0}.box li span{color:var(--muted)}
 .rel{display:flex;flex-wrap:wrap;gap:8px}.rel a{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;text-decoration:none}
 footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;display:flex;gap:16px;flex-wrap:wrap}footer a{color:var(--muted)}
-@media (max-width:560px){h1{font-size:24px}.jobs li{flex-direction:column;gap:0}.jobs .d{padding:0 14px 10px}}.ans{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px 16px;margin:14px 0}.ans p{margin:0}table.win{border-collapse:collapse;width:100%;margin:8px 0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}table.win th,table.win td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)}table.win td.n,table.win th.n{text-align:right;font-variant-numeric:tabular-nums}table.win tr:last-child td{border-bottom:0}.faq h3{font-size:15px;margin:16px 0 4px}.faq p{margin:0}`;
+@media (max-width:560px){h1{font-size:24px}.jobs li{flex-direction:column;gap:0}.jobs .d{padding:0 14px 10px}}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.home{background:var(--accent);color:#1d1d1b;font-weight:700;text-decoration:none;border-radius:10px;padding:9px 16px;font-size:14px;text-align:center}.home:hover{filter:brightness(.95)}.ans{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:12px 16px;margin:14px 0}.ans p{margin:0}table.win{border-collapse:collapse;width:100%;margin:8px 0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}table.win th,table.win td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)}table.win td.n,table.win th.n{text-align:right;font-variant-numeric:tabular-nums}table.win tr:last-child td{border-bottom:0}.faq h3{font-size:15px;margin:16px 0 4px}.faq p{margin:0}`;
 const median = (a: number[]) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
 const top = (m: Map<string, number>, n: number) => [...m].sort((a, b) => b[1] - a[1]).slice(0, n);
 const ago = (iso?: string | null) => { if (!iso) return ""; const d = (Date.now() - Date.parse(iso)) / 864e5; if (!(d >= 0)) return ""; return d < 1 ? "Posted today" : d < 30 ? `Posted ${Math.round(d)}d ago` : ""; };
@@ -161,7 +161,7 @@ export function renderLanding(l: Landing, all: Job[], asOf: string): { html: str
 <link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>
 <style>${CSS}</style></head>
-<body><div class="w"><a class="logo" href="/" aria-label="Job Finder home"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a>
+<body><div class="w"><div class="top"><a class="logo" href="/" aria-label="Job Finder home"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a><a class="home" href="/">Search all jobs on Job Finder<span aria-hidden="true"> →</span></a></div>
 <nav class="crumb"><a href="/">Job Finder</a> › ${esc(l.h1)}</nav>
 <h1>${esc(l.h1)}</h1>
 ${l.intro.map(p => `<p>${esc(p)}</p>`).join("")}
@@ -221,7 +221,7 @@ export function renderHub(all: Job[], asOf: string): { html: string; count: numb
 <link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script type="application/ld+json">${JSON.stringify(ld).replace(/</g, "\\u003c")}</script>
 <style>${CSS}</style></head>
-<body><div class="w"><a class="logo" href="/" aria-label="Job Finder home"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a>
+<body><div class="w"><div class="top"><a class="logo" href="/" aria-label="Job Finder home"><img src="/logo.png?v=2" alt="Job Finder" width="56" height="56"></a><a class="home" href="/">Search all jobs on Job Finder<span aria-hidden="true"> →</span></a></div>
 <nav class="crumb"><a href="/">Job Finder</a> › New jobs today</nav>
 <h1>${esc(h1)}</h1>
 <a class="cta" href="/">Search and filter all jobs</a>
