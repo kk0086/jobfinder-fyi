@@ -422,8 +422,8 @@ boot();
       S.lang=(navigator.language||"").slice(0,12);S.scr=screen.width+"x"+screen.height;S.tz=(Intl.DateTimeFormat().resolvedOptions().timeZone||"").slice(0,40);S.land=location.pathname.slice(0,60)}catch(e){}
     S.f=[];S.q=[];S.pg=0}
   S.views++;S.vid=vid;S.returning=returning;
-  var tick=Date.now();
-  function send(){var now=Date.now();if(document.visibilityState==="visible"&&document.hasFocus())S.active+=Math.min(35,(now-tick)/1000);tick=now;S.last=now;
+  var tick=Date.now();var MOB=/Android|iPhone|iPad|iPod|FBAN|FBAV|Instagram|Mobile/i.test(navigator.userAgent);
+  function send(){var now=Date.now();if(document.visibilityState==="visible"&&(MOB||document.hasFocus()))S.active+=Math.min(35,(now-tick)/1000);tick=now;S.last=now;
     try{sessionStorage.setItem("jf_s",JSON.stringify(S))}catch(e){}
     var b=JSON.stringify({sid:S.sid,vid:S.vid,start:S.start,active:Math.round(S.active),views:S.views,clicks:S.clicks,ref:S.ref,returning:S.returning,utm:S.utm,lang:S.lang,scr:S.scr,tz:S.tz,land:S.land,f:S.f,q:S.q,pg:S.pg});
     if(navigator.sendBeacon)navigator.sendBeacon("/api/collect",new Blob([b],{type:"text/plain"}));else fetch("/api/collect",{method:"POST",body:b,keepalive:true})}
