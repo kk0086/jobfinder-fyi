@@ -1,4 +1,4 @@
-import { normalizeJob, annualPay, payFromText, waFromText, type Job, type RawJob } from "./normalize.mts";
+import { normalizeJob, annualPay, payFromText, waFromText, spFromText, type Job, type RawJob } from "./normalize.mts";
 import { getStore } from "@netlify/blobs";
 import feeds from "./feeds.json" with { type: "json" };
 
@@ -47,14 +47,14 @@ export async function readFeed(f: Feed): Promise<RawJob[]> {
       company: f.name, title: x.title,
       location: [x.location, ...(x.secondaryLocations || []).map((s: any) => s.location)].filter(Boolean).join("; "),
       department: x.department || x.team || "", url: x.jobUrl || `https://jobs.ashbyhq.com/${f.slug}/${x.id}`,
-      posted: x.publishedAt, remote: x.isRemote ?? null, ...ashbyPay(x, x.descriptionPlain), ...(waFromText(String(x.descriptionPlain || "")) ? { wa: true } : {}),
+      posted: x.publishedAt, remote: x.isRemote ?? null, ...ashbyPay(x, x.descriptionPlain), ...(waFromText(String(x.descriptionPlain || "")) ? { wa: true } : {}), ...(spFromText(String(x.descriptionPlain || "")) ? { sp: true } : {}),
     }));
   }
   const j = await getJson(`https://api.lever.co/v0/postings/${f.slug}?mode=json`);
   return (Array.isArray(j) ? j : []).map((x: any) => ({
     company: f.name, title: x.text, location: x.categories?.location || (x.categories?.allLocations || []).join("; ") || "",
     department: x.categories?.department || x.categories?.team || "", url: x.hostedUrl || `https://jobs.lever.co/${f.slug}/${x.id}`,
-    posted: x.createdAt, ...leverPay(x), ...(waFromText(String(x.descriptionPlain || x.description || "") + " " + (x.lists || []).map((l: any) => l.content).join(" ")) ? { wa: true } : {}),
+    posted: x.createdAt, ...leverPay(x), ...(()=>{ const T = String(x.descriptionPlain || x.description || "") + " " + (x.lists || []).map((l: any) => l.content).join(" "); return { ...(waFromText(T) ? { wa: true } : {}), ...(spFromText(T) ? { sp: true } : {}) }; })(),
   }));
 }
 
@@ -85,7 +85,7 @@ async function ghPay(slug: string, id: any) {
   // Many employers leave the structured range empty and state pay in the description instead.
   const text = String(j.content || "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/<[^>]*>/g, " ").replace(/&nbsp;|&#39;|&quot;/g, " ").replace(/\s+/g, " ");
   const t = p ? null : payFromText(text);
-  return { wa: waFromText(text), ...(p ? { min: p.min, max: p.max, cur: r.currency_type || "USD" } : t?.salary_min ? { min: t.salary_min, max: t.salary_max || t.salary_min, cur: t.salary_cur || "USD" } : {}) };
+  return { wa: waFromText(text), sp: spFromText(text), ...(p ? { min: p.min, max: p.max, cur: r.currency_type || "USD" } : t?.salary_min ? { min: t.salary_min, max: t.salary_max || t.salary_min, cur: t.salary_cur || "USD" } : {}) };
 }
 
 export type CompanyResult = { name: string; ok: boolean; total: number; kept: number; error?: string };
@@ -132,9 +132,10 @@ export async function crawlChunk(chunk: number, budgetMs = 24000, prevJobs: any[
       if (!j.gh_id) continue;
       const o = old.get(j.url);
       if (o?.wa) j.wa = 1;
+      if (o?.sp) j.sp = 1;
       if (j.salary_min) continue;
       if (o?.salary_min) { j.salary_min = o.salary_min; j.salary_max = o.salary_max; j.salary_cur = o.salary_cur; j.sal_at = o.sal_at; continue; }
-      if (o?.sal_at && o.sal_v === 3 && Date.parse(o.sal_at) > week) { j.sal_at = o.sal_at; j.sal_v = 3; continue; }
+      if (o?.sal_at && o.sal_v === 4 && Date.parse(o.sal_at) > week) { j.sal_at = o.sal_at; j.sal_v = 4; continue; }
       todo.push(j);
     }
     todo.sort((a: any, b: any) => (GH_PRIORITY[a.seniority] ?? 2) - (GH_PRIORITY[b.seniority] ?? 2));
@@ -145,8 +146,9 @@ export async function crawlChunk(chunk: number, budgetMs = 24000, prevJobs: any[
         if (!slug) continue;
         try {
           const p = await ghPay(slug, j.gh_id);
-          j.sal_at = new Date().toISOString(); j.sal_v = 3;
+          j.sal_at = new Date().toISOString(); j.sal_v = 4;
           if (p.wa) j.wa = 1;
+          if (p.sp) j.sp = 1;
           if (p.min) { j.salary_min = p.min; j.salary_max = p.max; j.salary_cur = p.cur; }
         } catch {}
       }
