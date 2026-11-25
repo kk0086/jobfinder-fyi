@@ -167,9 +167,25 @@ export function waFromText(text: string): boolean {
   ];
   return res.some(r => r.test(t));
 }
+// True when the posting says it will not sponsor a work visa (H-1B included): "we are unable to sponsor", "no visa sponsorship", "sponsorship is not available".
+export function nsFromText(text: string): boolean {
+  if (!text) return false;
+  const t = String(text).replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;/g, " ").replace(/&amp;/g, "&").replace(/[\u2018\u2019]/g, "'").replace(/\s+/g, " ");
+  const kind = "(?:(?:h-?\\s?1-?\\s?b|visa|immigration|employment|work(?:\\s+(?:visa|authorization|permit))?|work-?related)\\s+(?:visa\\s+)?)";
+  const res = [
+    new RegExp("(?:not|unable to|cannot|can't|can ?not|won't|never|n't)\\s+(?:be able to\\s+|currently\\s+|able to\\s+)?(?:offer|provide|sponsor|support|consider|extend)(?:\\s+(?:any|you|candidates|applicants))?[^.]{0,60}?(?:sponsor|visa|h-?\\s?1-?\\s?b)", "i"),
+    new RegExp("(?:unable|not able|not in a position|do not|does not|don't|doesn't|will not|won't|cannot|can't)\\s+(?:to\\s+)?(?:currently\\s+)?sponsor", "i"),
+    new RegExp("\\bno\\s+" + kind + "?sponsorship", "i"),
+    new RegExp("(?:" + kind + "?sponsorship)\\s+(?:is\\s+|are\\s+)?(?:not|unavailable|isn't)\\s+(?:available|offered|provided|supported|possible|being offered)", "i"),
+    new RegExp("not\\s+(?:eligible|available)\\s+for\\s+" + kind + "?sponsorship", "i"),
+    new RegExp("without\\s+(?:the\\s+need\\s+for\\s+|requiring\\s+|needing\\s+)?(?:current\\s+or\\s+future\\s+)?(?:visa\\s+|employer\\s+|company\\s+)?sponsorship", "i"),
+    new RegExp("h-?\\s?1-?\\s?b[^.]{0,50}(?:not|no)\\s+(?:sponsored|available|offered|supported)", "i"),
+  ];
+  return res.some(r => r.test(t));
+}
 // Pay range plus the work-authorization flag, in the shape readers spread into a RawJob.
-export function descInfo(text: string): { salary_min?: number; salary_max?: number; salary_cur?: string; wa?: boolean } {
-  return { ...(payFromText(text) || {}), ...(waFromText(text) ? { wa: true } : {}) };
+export function descInfo(text: string): { salary_min?: number; salary_max?: number; salary_cur?: string; wa?: boolean; ns?: boolean } {
+  return { ...(payFromText(text) || {}), ...(waFromText(text) ? { wa: true } : {}), ...(nsFromText(text) ? { ns: true } : {}) };
 }
 // Finds a posted USD pay range in free text ("The base pay range is $150,000 - $200,000"). Returns null when there is no clear range.
 export function payFromText(text: string): { salary_min: number; salary_max: number; salary_cur: string } | null {
@@ -280,7 +296,7 @@ export function roleFamily(title: string, department: string): string | null {
 }
 
 // ---- Job normalization --------------------------------------------------
-export interface RawJob { company: string; title: string; location: string; department: string; url: string; posted?: string | null; updated?: string | null; remote?: boolean | null; salary_min?: number | null; salary_max?: number | null; salary_cur?: string | null; gh_id?: number | string | null; wa?: boolean }
+export interface RawJob { company: string; title: string; location: string; department: string; url: string; posted?: string | null; updated?: string | null; remote?: boolean | null; salary_min?: number | null; salary_max?: number | null; salary_cur?: string | null; gh_id?: number | string | null; wa?: boolean; ns?: boolean }
 
 const iso = (s?: string | number | null) => {
   if (s === undefined || s === null || s === "") return null;
@@ -308,7 +324,7 @@ export function normalizeJob(j: RawJob, opts: { assumeUS?: boolean } = {}) {
     department: dept || inferDepartment(j.title), department_inferred: !dept,
     role: family, domains: findDomains(j.title, dept), example: false,
     seniority: seniority(j.title), remote, posted: iso(j.posted), updated: iso(j.updated),
-    url: j.url.trim(), salary_min: j.salary_min ?? null, salary_max: j.salary_max ?? null, ...(j.salary_min ? { salary_cur: (j.salary_cur || "USD").toUpperCase() } : {}), ...(j.gh_id ? { gh_id: j.gh_id } : {}), ...(cc ? { cc } : {}), ...(j.wa ? { wa: 1 } : {}),
+    url: j.url.trim(), salary_min: j.salary_min ?? null, salary_max: j.salary_max ?? null, ...(j.salary_min ? { salary_cur: (j.salary_cur || "USD").toUpperCase() } : {}), ...(j.gh_id ? { gh_id: j.gh_id } : {}), ...(cc ? { cc } : {}), ...(j.wa ? { wa: 1 } : {}), ...(j.ns ? { ns: 1 } : {}),
   };
 }
 export type Job = NonNullable<ReturnType<typeof normalizeJob>>;
