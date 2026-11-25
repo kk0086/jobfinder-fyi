@@ -70,11 +70,11 @@ export const LANDINGS: Landing[] = [
 ];
 export const bySlug = (s: string) => LANDINGS.find(l => l.slug === s);
 
-const esc = (s: any) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+export const esc = (s: any) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 const SYM: Record<string, string> = { USD: "$", GBP: "£", EUR: "€", CAD: "C$", AUD: "A$" };
-const money = (n: number, cur = "USD") => (SYM[cur] || cur + " ") + Math.round(n / 1000) + "K";
-const ORIGIN = "https://jobfinder.fyi";
-const CSS = `:root{--bg:#fafaf8;--card:#fff;--ink:#1d1d1b;--muted:#6b6b66;--line:#e6e5df;--link:#0f566f;--accent:#f96b4c;--pay:#0b7a4b}@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--ink:#ecebe6;--muted:#9a9990;--line:#2f2f2b;--link:#7cc4dc;--pay:#4cc38a}}
+export const money = (n: number, cur = "USD") => (SYM[cur] || cur + " ") + Math.round(n / 1000) + "K";
+export const ORIGIN = "https://jobfinder.fyi";
+export const CSS = `:root{--bg:#fafaf8;--card:#fff;--ink:#1d1d1b;--muted:#6b6b66;--line:#e6e5df;--link:#0f566f;--accent:#f96b4c;--pay:#0b7a4b}@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--ink:#ecebe6;--muted:#9a9990;--line:#2f2f2b;--link:#7cc4dc;--pay:#4cc38a}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}a{color:var(--link)}
 .w{max-width:960px;margin:0 auto;padding:18px 16px 50px}.logo img{height:56px;width:56px;display:block}.crumb{color:var(--muted);font-size:13px;margin:14px 0 4px}.crumb a{color:var(--muted)}
 h1{font-size:30px;line-height:1.2;margin:4px 0 10px}h2{font-size:17px;margin:26px 0 10px}.stats{display:flex;flex-wrap:wrap;gap:10px 22px;margin:14px 0}.stats span{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px}

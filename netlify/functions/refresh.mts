@@ -15,6 +15,7 @@ export default async (req: Request) => {
     return Response.json({ stored: rows.length });
   }
   if (q.get("hot")) return Response.json(await runHot());
+  if (q.get("jobpages")) { const { loadAll } = await import("../lib/store.mts"); const { writeJobShards } = await import("../lib/jobpage.mts"); return Response.json(await writeJobShards((await loadAll()).jobs)); }
   const c = +(q.get("chunk") ?? -1);
   if (!(c >= 0 && c < TOTAL_BATCHES)) return Response.json({ error: "chunk must be 0.." + (TOTAL_BATCHES - 1) }, { status: 400 });
   const r = await runChunk(c);
