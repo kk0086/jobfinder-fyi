@@ -427,9 +427,9 @@ boot();
     try{sessionStorage.setItem("jf_s",JSON.stringify(S))}catch(e){}
     var b=JSON.stringify({sid:S.sid,vid:S.vid,start:S.start,active:Math.round(S.active),views:S.views,clicks:S.clicks,ref:S.ref,returning:S.returning,utm:S.utm,lang:S.lang,scr:S.scr,tz:S.tz,land:S.land,f:S.f,q:S.q,pg:S.pg});
     if(navigator.sendBeacon)navigator.sendBeacon("/api/collect",new Blob([b],{type:"text/plain"}));else fetch("/api/collect",{method:"POST",body:b,keepalive:true})}
-  send();setInterval(function(){if(document.visibilityState==="visible")send();else tick=Date.now()},15000);
+  send();var hb=function(){if(document.visibilityState==="visible")send();else tick=Date.now()};setTimeout(hb,2000);setTimeout(hb,5000);setTimeout(hb,9000);setInterval(hb,12000);
   document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")send();else tick=Date.now()});
-  addEventListener("pagehide",send);
+  addEventListener("pagehide",send);addEventListener("freeze",send);
   document.addEventListener("change",function(e){var t=e.target;if(!t||!t.id)return;
     if(/^(freg|fdomain|frole|fc|fs|fl|fr|ffit|fpay)$/.test(t.id)){var v=t.type==="checkbox"?(t.checked?"on":"off"):t.value;if(v&&S.f.length<40){S.f.push(t.id+":"+String(v).slice(0,60));send()}}
     else if(t.id==="q"){var q=(t.value||"").trim().toLowerCase().slice(0,40);if(q&&S.q.length<12){S.q.push(q);send()}}},true);
