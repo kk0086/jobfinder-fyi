@@ -8,6 +8,9 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#fafaf8" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Job Finder">
 <style>
 :root{--bg:#fafaf8;--card:#fff;--ink:#1d1d1b;--muted:#6b6b66;--line:#e6e5df;--accent:#2f6fed;--accent-soft:#e8f0fe;--ok:#1a7f4b;--warn:#b26a00;--bad:#b3261e}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141413;--card:#1c1c1a;--ink:#ecebe6;--muted:#9a9990;--line:#2f2f2b;--accent:#6c9cff;--accent-soft:#1d2a44;--ok:#4cc38a;--warn:#e0a040;--bad:#f27b73;color-scheme:dark}}
@@ -114,6 +117,39 @@ dialog#cd::backdrop{background:rgba(0,0,0,.45)}
 .main{flex:999 1 560px;min-width:0}
 .ftog{display:none;margin:0 0 12px;font:inherit;padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer}
 @media (max-width:760px){.side{display:none;flex-basis:100%}.side.open{display:flex}.ftog{display:inline-block}.search{flex-wrap:wrap}.search #freg{min-width:0;padding:10px 14px;flex:1 1 100%;border-right:0;border-bottom:1px solid var(--line)}.search .sin{flex:1 1 60%}.search #sgo{padding:0 18px}}
+
+/* ---- Phone app-like layout (<=760px): compact header, sticky search, dense rows, bottom tabs, filter sheet ---- */
+#tabs,#fov,.fap,#inst{display:none}
+@media (max-width:760px){
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+body.shopen{overflow:hidden}
+.wrap{padding-block:8px 24px}
+.hd{flex-wrap:nowrap;gap:8px;margin:0 0 4px;align-items:center}.stx{display:none}.brand{display:flex;align-items:center;gap:10px}.brand img{height:36px;width:auto}.brand::after{content:"Job Finder";font-size:17px;font-weight:800;line-height:1;color:var(--ink)}
+.acct{width:auto;margin-left:auto}.acct .ab{height:40px}
+.search{position:sticky;top:0;z-index:40;flex-wrap:nowrap;align-items:center;margin:4px 0 8px;border-radius:12px;box-shadow:none}
+.search #sgo{display:none}.search .sin{flex:1 1 auto;padding:0 12px}.search .sin input{font-size:16px;padding:13px 0}
+.search .ftog{display:flex;align-items:center;justify-content:center;position:relative;flex:none;width:48px;height:48px;margin:0;padding:0;border:0;border-left:1px solid var(--line);border-radius:0;color:#0b4f5c}
+.ftog .fb{position:absolute;top:4px;right:4px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border-radius:10px;background:#c43a27;color:#fff;font-size:12px;font-weight:700;line-height:20px;text-align:center}
+.pop{flex-wrap:nowrap;overflow-x:auto;gap:8px;margin:0 -16px 8px;padding:0 16px 2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.pop::-webkit-scrollbar{display:none}.pop>span{display:none}.pop button{flex:none;min-height:40px;padding:8px 14px}
+.layout{display:block}.main{display:flex;flex-direction:column}.sub{display:none}.tiles{order:20;margin-top:18px}.charts{order:21}.mrow{order:1}.pager{order:2}#pgTop{display:none}.pgrid{grid-template-rows:none;grid-auto-flow:row;grid-template-columns:1fr 1fr;gap:4px 14px}.pgrid a{display:flex;align-items:center;min-height:44px;font-size:14px}#list{order:3}#pgBot{order:4}
+#list{display:flex;flex-direction:column;gap:8px}
+.job{grid-template-columns:1fr;padding:14px 16px;border-radius:12px;gap:4px}.job .t{grid-row:1;font-size:16px;font-weight:700;line-height:1.3}.job .c{grid-row:2;font-size:14px;line-height:1.4}.job .r{grid-row:3;grid-column:1;flex-direction:row;justify-content:space-between;align-items:center;text-align:left;margin-top:4px}
+.act button{height:40px;min-width:44px;font-size:13px}.act .sv{width:44px}
+.pager button,.pager a{min-height:44px}
+.side.open{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:80;max-height:86vh;overflow-y:auto;border:0;border-radius:20px 20px 0 0;padding:14px 20px calc(92px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.3);overscroll-behavior:contain}
+.side .sh{position:sticky;top:-14px;z-index:2;background:var(--card);padding:10px 0 8px}.side .sh::before{content:"";position:absolute;top:-4px;left:50%;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:var(--line)}.side .sh b{font-size:18px}.side .sh button{font-size:14px;font-weight:700;min-height:40px}
+.side select,.side .ms>button{min-height:44px}
+.ms .pn{position:static;width:100%;max-width:none;box-shadow:none;margin-top:6px}
+.side #freg{font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);min-height:44px;width:100%}
+#fov{position:fixed;inset:0;z-index:70;background:rgba(20,40,44,.45)}body.shopen #fov{display:block}
+.side.open .fap{display:flex;align-items:center;justify-content:center;position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:81;height:50px;border:0;border-radius:12px;background:#c43a27;color:#fff;font:inherit;font-size:16px;font-weight:700;cursor:pointer}
+#tabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}body.shopen #tabs{display:none}
+#tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 9px;min-height:56px;box-sizing:border-box;color:var(--muted);text-decoration:none;font-size:11px;font-weight:600}#tabs a[aria-current]{color:#0b4f5c}
+#jfNew{bottom:calc(76px + env(safe-area-inset-bottom,0px)) !important;left:12px !important}
+#inst.show{display:flex;position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:65;align-items:center;gap:12px;padding:12px;border-radius:14px;background:#14282c;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+#inst img{width:44px;height:44px;border-radius:10px;background:#fff}#inst div{flex:1;font-size:14px;line-height:1.35}#inst small{opacity:.8;font-size:13px}
+#inst button{font:inherit;font-size:14px;font-weight:700;border:0;border-radius:8px;padding:10px 14px;min-height:44px;cursor:pointer}#inst .add{background:#fff;color:#14282c}#inst .x{background:transparent;color:#fff;padding:10px 8px;opacity:.8}
+}
 </style>
 <script>window.__rg=(function(){var m=/[?&]region=(all|us|ca|uk|ie|emea)\b/.exec(location.search);return m?m[1]:"all"})();
 window.__load=function(rg){var one=function(r){return fetch("/api/jobs"+(r==="us"?"":"?region="+r)).then(function(x){return x.ok?x.json():null}).catch(function(){return null})};
@@ -152,6 +188,7 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
     <div class="fl"><span>Work Authorization (for US only)</span><div class="ms" id="fwaw"><button type="button" id="fwab"><span id="fwal">Any authorization</span><span>▾</span></button><input type="hidden" id="fwav"><div class="pn"><input type="search" id="fwas" hidden><div class="ls" id="fwals"></div><div class="ft"><a id="fwaclr">Clear</a><a id="fwadone">Done</a></div></div></div></div>
     <label class="fl"><span>Work Mode</span><select id="fr"><option value="">Remote + onsite</option><option value="1">Remote only</option><option value="0">Onsite only</option></select></label>
     <label class="fl"><span>Date Posted</span><select id="fdt"><option value="">Anytime</option><option value="1">Last 24 hours</option><option value="3">Last 3 days</option><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="30">Last month</option></select></label>
+    <button type="button" class="fap" id="fapply">Show jobs</button>
   </aside>
   <main class="main">
   <div class="sub" id="asof"></div>
@@ -166,6 +203,9 @@ setTimeout(function(){if(document.getElementById("splash"))window.hideSplash()},
   <nav class="foot" aria-label="Popular searches"><span>Popular searches</span><div class="pgrid"><a href="/jobs/software-engineer">Software Engineer jobs</a><a href="/jobs/ai-engineer">AI Engineer jobs</a><a href="/jobs/full-stack-developer">Full Stack Developer jobs</a><a href="/jobs/devops-engineer">DevOps Engineer jobs</a><a href="/jobs/security-engineer">Security Engineer jobs</a><a href="/jobs/data-scientist">Data Scientist jobs</a><a href="/jobs/product-manager">Product Manager jobs</a><a href="/jobs/ux-designer">UX Designer jobs</a><a href="/jobs/marketing-manager">Marketing Manager jobs</a><a href="/jobs/business-development">Business Development jobs</a><a href="/jobs/recruiter">Recruiter jobs</a><a href="/jobs/sales">Sales jobs</a><a href="/jobs/customer-service">Customer Service jobs</a><a href="/jobs/supply-chain-analyst">Supply Chain Analyst jobs</a></div></nav>
   <footer class="foot"><span>&copy; 2026 Jobfinder.fyi</span><button type="button" id="contactBtn">Contact</button><a href="/privacy.html">Privacy</a></footer>
 </div>
+<div id="fov"></div>
+<nav id="tabs" aria-label="Main"><a href="/" aria-current="page"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Jobs</a><a href="/saved.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Saved</a><a href="/applied.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Applied</a><a href="/account.html"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Account</a></nav>
+<div id="inst" role="dialog" aria-label="Install Job Finder"><img src="/favicon-192.png" alt="" width="44" height="44"><div><b>Add Job Finder to your home screen</b><br><small id="instm">One tap to new jobs, no app store.</small></div><button type="button" class="add" id="instgo">Add</button><button type="button" class="x" id="instx" aria-label="Dismiss">✕</button></div>
 <dialog id="cd">
   <form name="contact" method="POST" action="/" data-netlify="true" netlify-honeypot="bot-field" id="cf">
     <h2>Contact us</h2><p class="s">Feedback, questions or ideas &mdash; we read every message.</p>
@@ -503,6 +543,43 @@ render=function(){
     if(window.__jfGate)window.__jfGate(MSG,false);
   } else ok=snap();
   return r0.apply(this,arguments)};
+})();
+</script>
+<script>
+/* Phone app-like behaviour, PWA registration and install prompt. */
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  try{if("serviceWorker" in navigator)addEventListener("load",function(){navigator.serviceWorker.register("/sw.js").catch(function(){})})}catch(e){}
+  var mq=matchMedia("(max-width:760px)");if(!mq.matches)return;
+  try{
+    var side=$("side"),freg=$("freg"),sh=side.querySelector(".sh"),lab=document.createElement("label");
+    lab.className="fl";lab.innerHTML="<span>Region</span>";lab.appendChild(freg);sh.after(lab);
+    var ft=$("ftog");document.querySelector(".search").appendChild(ft);
+    ft.setAttribute("aria-label","Filters");ft.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span class="fb" id="fbadge" hidden></span>';
+    var ap=$("fapply"),cnt=$("count");
+    function close(){side.classList.remove("open");ft.setAttribute("aria-expanded","false")}
+    function upd(){
+      var n=((cnt.textContent||"").match(/[\d,]+/)||["0"])[0];ap.textContent="Show "+n+" jobs";
+      var k=0;try{["country","state","dept","remote","date"].forEach(function(x){if(F[x])k++});["company","role","level","domain","pay","wa"].forEach(function(x){if(F[x]&&F[x].length)k++})}catch(e){}
+      var b=$("fbadge");b.hidden=!k;b.textContent=k}
+    new MutationObserver(upd).observe(cnt,{childList:true,characterData:true,subtree:true});upd();
+    new MutationObserver(function(){document.body.classList.toggle("shopen",side.classList.contains("open"))}).observe(side,{attributes:true,attributeFilter:["class"]});
+    $("fov").onclick=close;ap.onclick=function(){close();window.scrollTo(0,0)};
+    addEventListener("keydown",function(e){if(e.key==="Escape")close()});
+  }catch(e){}
+  // Install prompt: after the 2nd visit, never inside Facebook/Instagram browsers (they cannot install), once per 14 days if dismissed.
+  try{
+    var ua=navigator.userAgent,standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone;
+    if(standalone||/FBAN|FBAV|Instagram|Line\/|Twitter|LinkedInApp|Snapchat|MicroMessenger/i.test(ua))return;
+    var n=+localStorage.getItem("jf_vn")||0;if(!sessionStorage.getItem("jf_vs")){sessionStorage.setItem("jf_vs","1");n++;localStorage.setItem("jf_vn",n)}
+    if(n<2||Date.now()-(+localStorage.getItem("jf_instx")||0)<14*864e5)return;
+    var box=$("inst"),go=$("instgo"),m=$("instm"),ev=null;
+    $("instx").onclick=function(){box.classList.remove("show");localStorage.setItem("jf_instx",Date.now())};
+    var ios=/iPhone|iPad|iPod/i.test(ua)&&/Safari/i.test(ua)&&!/CriOS|FxiOS|EdgiOS/i.test(ua);
+    if(ios){m.textContent="Tap the Share button, then Add to Home Screen.";go.textContent="Got it";go.onclick=function(){box.classList.remove("show");localStorage.setItem("jf_instx",Date.now())};box.classList.add("show")}
+    else addEventListener("beforeinstallprompt",function(e){e.preventDefault();ev=e;box.classList.add("show");go.onclick=function(){box.classList.remove("show");ev.prompt();ev=null}});
+    addEventListener("appinstalled",function(){box.classList.remove("show")});
+  }catch(e){}
 })();
 </script>
 </body>
